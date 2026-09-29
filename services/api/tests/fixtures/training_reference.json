@@ -1,0 +1,819 @@
+[
+  {
+    "case": "dialogo_bueno",
+    "scenario": "medico_general_indiferenciado",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, doctor, cuénteme, pero breve por favor."
+      },
+      {
+        "role": "visitador",
+        "content": "Doctor, claro que sí. Quería preguntarle brevemente cómo suele manejar hoy a los pacientes con reflujo y dispepsia que ve con frecuencia, especialmente cuando decide cuál IBP formular."
+      },
+      {
+        "role": "medico",
+        "content": "La verdad, normalmente uso el que tenga disponible. No tengo una preferencia particular."
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo, doctor. O sea que usted ya usa la categoría de manera habitual, pero más desde una lógica práctica que desde una preferencia fija por una molécula específica."
+      },
+      {
+        "role": "medico",
+        "content": "Sí, exactamente. Al final muchos son parecidos."
+      },
+      {
+        "role": "visitador",
+        "content": "Claro, doctor, y justamente esa es una percepción muy frecuente cuando la categoría ya está incorporada en la práctica diaria. Por eso más que repetirle lo que hace un IBP, quería dejarle una opción bien ubicada para esos pacientes con reflujo y dispepsia que usted ve todos los días."
+      },
+      {
+        "role": "medico",
+        "content": "Bueno, ¿y cuál sería la diferencia?"
+      },
+      {
+        "role": "visitador",
+        "content": "Además de buscar ese posicionamiento más claro en su consulta, ESOMED cuenta con tecnología Hüttling, basada en microgránulos uniformes con recubrimiento gastroresistente, diseñada para proteger el esomeprazol del ambiente ácido gástrico y permitir su liberación intestinal."
+      },
+      {
+        "role": "medico",
+        "content": "Está bien."
+      },
+      {
+        "role": "visitador",
+        "content": "Entonces, doctor, quisiera dejarle a ESOMED como una opción concreta para esos pacientes con reflujo y dispepsia en los que usted ya usa IBP, pero sin una preferencia tan marcada por una molécula específica."
+      }
+    ],
+    "scores": {
+      "apertura": 5,
+      "sondeo": 3,
+      "parafraseo": 5,
+      "argumentacion": 5,
+      "manejo_objeciones": 4,
+      "cierre": 5
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste preguntando por su práctica en lugar de promocionar: es la apertura correcta.",
+      "sondeo": "Hiciste una pregunta exploratoria, pero te quedaste corto: faltó profundizar.",
+      "parafraseo": "Resumiste y validaste lo que dijo el médico antes de argumentar.",
+      "argumentacion": "Posicionaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. Construiste un posicionamiento concreto y recordable.",
+      "manejo_objeciones": "Respondiste parcialmente las objeciones; alguna quedó sin cerrar. Usaste la tecnología Hüttling en el momento correcto y conectada al carácter ácido-lábil de la molécula.",
+      "cierre": "Cerraste con una síntesis explícita. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [],
+    "checklist": {
+      "detecto_perfil": "parcial",
+      "identifico_barrera": "si",
+      "posiciono_principio_activo": "si",
+      "uso_huttling": "si",
+      "diferencio_al_pedirlo": "parcial"
+    },
+    "areas": [
+      "sondeo"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 27,
+    "band": "sobresaliente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "dialogo_regular",
+    "scenario": "medico_general_indiferenciado",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, cuénteme."
+      },
+      {
+        "role": "visitador",
+        "content": "Doctor, vengo a recordarle ESOMED para sus pacientes con reflujo y dispepsia. Es un inhibidor de bomba de protones muy útil."
+      },
+      {
+        "role": "medico",
+        "content": "Sí, pero eso normalmente lo manejo con cualquiera."
+      },
+      {
+        "role": "visitador",
+        "content": "Sí, doctor, claro, pero ESOMED también es una buena opción dentro de los IBP."
+      },
+      {
+        "role": "medico",
+        "content": "Ajá."
+      },
+      {
+        "role": "visitador",
+        "content": "Además tiene tecnología Hüttling en microgránulos gastroresistentes."
+      },
+      {
+        "role": "medico",
+        "content": "Bueno."
+      },
+      {
+        "role": "visitador",
+        "content": "Entonces para sus pacientes con reflujo tenga presente ESOMED."
+      }
+    ],
+    "scores": {
+      "apertura": 1,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 1,
+      "manejo_objeciones": 1,
+      "cierre": 3
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra.",
+      "manejo_objeciones": "Reconociste la objeción sin ponerte a la defensiva, pero no reconduiste hacia un punto concreto de posicionamiento. Mencionaste Hüttling demasiado pronto: sonó a folleto en vez de a diferenciación.",
+      "cierre": "No hiciste una síntesis final. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "discurso_generico",
+      "no_resalta_principio_activo",
+      "no_responde_objecion",
+      "huttling_forzado",
+      "cierre_sin_idea"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "parcial",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 7,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "dialogo_malo",
+    "scenario": "medico_general_indiferenciado",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, doctor, lo escucho."
+      },
+      {
+        "role": "visitador",
+        "content": "Doctor, quiero hablarle de ESOMED, que es excelente para reflujo y dispepsia y tiene una tecnología muy avanzada."
+      },
+      {
+        "role": "medico",
+        "content": "Eso lo manejo con cualquier IBP."
+      },
+      {
+        "role": "visitador",
+        "content": "Sí, pero ESOMED se absorbe más del 95% y es mejor que los demás."
+      },
+      {
+        "role": "medico",
+        "content": "Bueno, gracias."
+      }
+    ],
+    "scores": {
+      "apertura": 1,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 0,
+      "manejo_objeciones": 0,
+      "cierre": 2
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra. Hiciste afirmaciones absolutas o cifras sin soporte.",
+      "manejo_objeciones": "No respondiste realmente la objeción del médico. Al defender el producto exageraste.",
+      "cierre": "No hiciste una síntesis final. Faltó anclar el cierre a un perfil de paciente concreto. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "discurso_generico",
+      "no_resalta_principio_activo",
+      "no_responde_objecion",
+      "exagera_beneficios",
+      "cierre_sin_idea"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "no",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 4,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "medico_general_indiferenciado__aprobado",
+    "scenario": "medico_general_indiferenciado",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, doctor, cuénteme, pero breve por favor."
+      },
+      {
+        "role": "visitador",
+        "content": "Buenos días, doctor. ¿Cómo suele definir cuál IBP formular en pacientes con reflujo o dispepsia?"
+      },
+      {
+        "role": "medico",
+        "content": "Uso el que tenga disponible. No tengo una preferencia particular."
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo, doctor. ¿Qué pesa más para usted: la disponibilidad, la experiencia o la practicidad?"
+      },
+      {
+        "role": "medico",
+        "content": "Principalmente la practicidad; al final me parecen bastante parecidos."
+      },
+      {
+        "role": "visitador",
+        "content": "Entonces usted ya usa la categoría, pero por practicidad y sin una molécula fija."
+      },
+      {
+        "role": "medico",
+        "content": "Sí. ¿Y cuál sería la diferencia?"
+      },
+      {
+        "role": "visitador",
+        "content": "Claro. Quisiera dejarle a ESOMED, esomeprazol, como una opción concreta para esos pacientes con reflujo y dispepsia. Hüttling protege el esomeprazol ácido-lábil frente al ambiente ácido y permite su liberación intestinal, sin plantearlo como superioridad absoluta."
+      },
+      {
+        "role": "medico",
+        "content": "Está bien, ese es un punto concreto."
+      },
+      {
+        "role": "visitador",
+        "content": "En resumen, quisiera dejarle ESOMED como opción concreta en esos pacientes con reflujo y dispepsia donde hoy rota el IBP por practicidad."
+      }
+    ],
+    "scores": {
+      "apertura": 5,
+      "sondeo": 5,
+      "parafraseo": 5,
+      "argumentacion": 5,
+      "manejo_objeciones": 3,
+      "cierre": 5
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste preguntando por su práctica en lugar de promocionar: es la apertura correcta.",
+      "sondeo": "Exploraste con varias preguntas sobre cómo prescribe hoy.",
+      "parafraseo": "Resumiste y validaste lo que dijo el médico antes de argumentar.",
+      "argumentacion": "Posicionaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. Construiste un posicionamiento concreto y recordable.",
+      "manejo_objeciones": "Reconociste la objeción sin ponerte a la defensiva, pero no reconduiste hacia un punto concreto de posicionamiento. Usaste la tecnología Hüttling en el momento correcto y conectada al carácter ácido-lábil de la molécula.",
+      "cierre": "Cerraste con una síntesis explícita. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [],
+    "checklist": {
+      "detecto_perfil": "si",
+      "identifico_barrera": "si",
+      "posiciono_principio_activo": "si",
+      "uso_huttling": "si",
+      "diferencio_al_pedirlo": "parcial"
+    },
+    "areas": [
+      "manejo_objeciones"
+    ],
+    "recommendation": "Refuerza la conexión entre lo que descubres en la exploración y el diferencial de Hüttling.",
+    "total": 28,
+    "band": "sobresaliente",
+    "approved": true,
+    "diagnosis": "Dominio demostrado: comprendiste la técnica y lograste aplicarla en conversación."
+  },
+  {
+    "case": "medico_general_indiferenciado__no_aprobado",
+    "scenario": "medico_general_indiferenciado",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, cuénteme."
+      },
+      {
+        "role": "visitador",
+        "content": "Doctor, ESOMED es excelente, muy avanzado y el mejor para todos sus pacientes."
+      },
+      {
+        "role": "medico",
+        "content": "Eso lo manejo con cualquiera."
+      },
+      {
+        "role": "visitador",
+        "content": "Pero ESOMED es mejor que los demás y garantiza el resultado."
+      }
+    ],
+    "scores": {
+      "apertura": 1,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 0,
+      "manejo_objeciones": 0,
+      "cierre": 2
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Faltó aterrizar el mensaje en reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra. Hiciste afirmaciones absolutas o cifras sin soporte.",
+      "manejo_objeciones": "No respondiste realmente la objeción del médico. Al defender el producto exageraste.",
+      "cierre": "No hiciste una síntesis final. Faltó anclar el cierre a un perfil de paciente concreto. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "no_resalta_principio_activo",
+      "no_responde_objecion",
+      "exagera_beneficios",
+      "cierre_sin_idea"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "no",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 4,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "internista_exigente__aprobado",
+    "scenario": "internista_exigente",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Buenos días. Dígame concretamente qué me trae."
+      },
+      {
+        "role": "visitador",
+        "content": "Buenos días, doctor. ¿Cómo suele seleccionar el IBP y qué resultado prioriza en sus pacientes con reflujo?"
+      },
+      {
+        "role": "medico",
+        "content": "Uso IBP, pero necesito una razón clínica para preferir uno."
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo. ¿Qué tipo de paciente le exige mayor consistencia en el control ácido?"
+      },
+      {
+        "role": "medico",
+        "content": "Los que mantienen síntomas. ¿Qué tiene de diferente ESOMED?"
+      },
+      {
+        "role": "visitador",
+        "content": "Claro, usted busca una razón aplicable y no un mensaje promocional. En esos pacientes con reflujo y síntomas persistentes, quisiera ubicar ESOMED, esomeprazol, como una opción concreta de control ácido para ese perfil de paciente. No le planteo una superioridad absoluta."
+      },
+      {
+        "role": "medico",
+        "content": "¿Y eso en la práctica qué me aporta?"
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo la pregunta. Hüttling aporta microgránulos gastroresistentes para proteger el esomeprazol ácido-lábil del ambiente ácido y permitir su liberación intestinal; es un apoyo farmacotécnico, no una promesa clínica absoluta."
+      },
+      {
+        "role": "medico",
+        "content": "Está bien."
+      },
+      {
+        "role": "visitador",
+        "content": "En resumen, tenga presente ESOMED en pacientes con reflujo donde busca una opción concreta de esomeprazol y control ácido."
+      }
+    ],
+    "scores": {
+      "apertura": 5,
+      "sondeo": 5,
+      "parafraseo": 1,
+      "argumentacion": 4,
+      "manejo_objeciones": 5,
+      "cierre": 5
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste preguntando por su práctica en lugar de promocionar: es la apertura correcta.",
+      "sondeo": "Exploraste con varias preguntas sobre cómo prescribe hoy.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "Posicionaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. Construiste un posicionamiento concreto y recordable. Usaste frases promocionales vacías que el médico no compra.",
+      "manejo_objeciones": "Reconociste la percepción del médico y llevaste la conversación a un punto concreto. Usaste la tecnología Hüttling en el momento correcto y conectada al carácter ácido-lábil de la molécula.",
+      "cierre": "Cerraste con una síntesis explícita. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [],
+    "checklist": {
+      "detecto_perfil": "si",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "si",
+      "uso_huttling": "si",
+      "diferencio_al_pedirlo": "si"
+    },
+    "areas": [
+      "parafraseo"
+    ],
+    "recommendation": "Para mejorar, parafrasea lo que dice el médico antes de argumentar.",
+    "total": 25,
+    "band": "bueno",
+    "approved": true,
+    "diagnosis": "Dominio demostrado: comprendiste la técnica y lograste aplicarla en conversación."
+  },
+  {
+    "case": "internista_exigente__no_aprobado",
+    "scenario": "internista_exigente",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "¿Qué me trae?"
+      },
+      {
+        "role": "visitador",
+        "content": "ESOMED es un excelente IBP, muy útil y superior a todos."
+      },
+      {
+        "role": "medico",
+        "content": "Necesito una razón clínica, no promoción."
+      },
+      {
+        "role": "visitador",
+        "content": "Es simplemente una gran alternativa y garantiza mejor resultado."
+      }
+    ],
+    "scores": {
+      "apertura": 0,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 0,
+      "manejo_objeciones": 1,
+      "cierre": 2
+    },
+    "comments": {
+      "apertura": "Faltó un saludo claro al inicio. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Faltó aterrizar el mensaje en reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra. Hiciste afirmaciones absolutas o cifras sin soporte.",
+      "manejo_objeciones": "El médico no llegó a objetar con claridad, así que no hay evidencia directa de manejo de objeciones en esta visita.",
+      "cierre": "No hiciste una síntesis final. Faltó anclar el cierre a un perfil de paciente concreto. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "no_resalta_principio_activo",
+      "exagera_beneficios",
+      "cierre_sin_idea"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "no",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 4,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "gastroenterologo_esceptico__aprobado",
+    "scenario": "gastroenterologo_esceptico",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Tengo tres minutos. ¿De qué se trata?"
+      },
+      {
+        "role": "visitador",
+        "content": "Buenos días, doctor. Seré breve: ¿cómo define hoy en qué pacientes con reflujo utiliza esomeprazol?"
+      },
+      {
+        "role": "medico",
+        "content": "Conozco bien la categoría. Depende del caso."
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo. ¿Qué tipo de paciente o síntoma pesa más cuando decide usarlo?"
+      },
+      {
+        "role": "medico",
+        "content": "Síntomas persistentes. Pero eso ya lo conozco, ¿en qué paciente me ubica ESOMED?"
+      },
+      {
+        "role": "visitador",
+        "content": "Claro, usted no necesita otra explicación básica. Quisiera ubicar ESOMED, esomeprazol, como una opción concreta en pacientes con reflujo o dispepsia que usted considere candidatos a esta molécula, sin afirmar superioridad frente a toda la categoría."
+      },
+      {
+        "role": "medico",
+        "content": "¿Y el diferencial?"
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo. Como apoyo farmacotécnico, Hüttling emplea microgránulos gastroresistentes para proteger el esomeprazol ácido-lábil del ambiente ácido y permitir su liberación intestinal."
+      },
+      {
+        "role": "medico",
+        "content": "Bien, sea concreto al cerrar."
+      },
+      {
+        "role": "visitador",
+        "content": "En resumen, recuerde ESOMED como opción concreta de esomeprazol en el paciente con reflujo o dispepsia donde usted decida utilizar esta molécula."
+      }
+    ],
+    "scores": {
+      "apertura": 5,
+      "sondeo": 5,
+      "parafraseo": 1,
+      "argumentacion": 4,
+      "manejo_objeciones": 5,
+      "cierre": 5
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste preguntando por su práctica en lugar de promocionar: es la apertura correcta.",
+      "sondeo": "Exploraste con varias preguntas sobre cómo prescribe hoy.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "Posicionaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia.",
+      "manejo_objeciones": "Reconociste la percepción del médico y llevaste la conversación a un punto concreto. Usaste la tecnología Hüttling en el momento correcto y conectada al carácter ácido-lábil de la molécula.",
+      "cierre": "Cerraste con una síntesis explícita. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [],
+    "checklist": {
+      "detecto_perfil": "si",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "si",
+      "uso_huttling": "si",
+      "diferencio_al_pedirlo": "si"
+    },
+    "areas": [
+      "parafraseo"
+    ],
+    "recommendation": "Para mejorar, parafrasea lo que dice el médico antes de argumentar.",
+    "total": 25,
+    "band": "bueno",
+    "approved": true,
+    "diagnosis": "Dominio demostrado: comprendiste la técnica y lograste aplicarla en conversación."
+  },
+  {
+    "case": "gastroenterologo_esceptico__no_aprobado",
+    "scenario": "gastroenterologo_esceptico",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Tengo tres minutos."
+      },
+      {
+        "role": "visitador",
+        "content": "Le explicaré qué es un IBP. ESOMED es excelente, muy útil y sirve para todos los problemas gástricos."
+      },
+      {
+        "role": "medico",
+        "content": "Eso ya lo conozco. ¿En qué paciente lo ubica?"
+      },
+      {
+        "role": "visitador",
+        "content": "En cualquiera, porque es superior a todos."
+      }
+    ],
+    "scores": {
+      "apertura": 0,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 0,
+      "manejo_objeciones": 0,
+      "cierre": 2
+    },
+    "comments": {
+      "apertura": "Faltó un saludo claro al inicio. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Faltó aterrizar el mensaje en reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra. Hiciste afirmaciones absolutas o cifras sin soporte.",
+      "manejo_objeciones": "No respondiste realmente la objeción del médico. Al defender el producto exageraste.",
+      "cierre": "No hiciste una síntesis final. Faltó anclar el cierre a un perfil de paciente concreto. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "discurso_generico",
+      "no_resalta_principio_activo",
+      "no_responde_objecion",
+      "exagera_beneficios",
+      "cierre_sin_idea",
+      "no_adapta_especialidad"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "no",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 3,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  },
+  {
+    "case": "formulador_pantoprazol__aprobado",
+    "scenario": "formulador_pantoprazol",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Sí, cuénteme. Yo vengo usando pantoprazol."
+      },
+      {
+        "role": "visitador",
+        "content": "Buenos días, doctor. ¿Cómo suele decidir en qué pacientes mantener pantoprazol y cuándo considera otra opción de IBP?"
+      },
+      {
+        "role": "medico",
+        "content": "Me funciona bien y mantengo el hábito."
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo su experiencia positiva. ¿Qué tipo de paciente o respuesta clínica podría llevarlo a considerar otra molécula?"
+      },
+      {
+        "role": "medico",
+        "content": "Tal vez síntomas persistentes, pero ya me funciona pantoprazol. ¿Por qué cambiar?"
+      },
+      {
+        "role": "visitador",
+        "content": "Claro, no se trata de desconocer lo que ya le funciona. En esos pacientes con reflujo y síntomas persistentes, usted consideraría una alternativa solo si tiene un lugar concreto."
+      },
+      {
+        "role": "medico",
+        "content": "Exactamente. ¿Qué me propone entonces?"
+      },
+      {
+        "role": "visitador",
+        "content": "Entonces usted mantiene pantoprazol por experiencia y solo evaluaría otra molécula en un perfil de paciente concreto. Para esos pacientes con reflujo o dispepsia donde decida considerar esomeprazol, quisiera ubicar ESOMED como una opción concreta. No le propongo reemplazar indiscriminadamente su tratamiento actual."
+      },
+      {
+        "role": "medico",
+        "content": "¿Hay algún punto adicional?"
+      },
+      {
+        "role": "visitador",
+        "content": "Entiendo. Hüttling utiliza microgránulos gastroresistentes para proteger el esomeprazol ácido-lábil del ambiente ácido y permitir su liberación intestinal, como refuerzo farmacotécnico."
+      },
+      {
+        "role": "medico",
+        "content": "Está bien."
+      },
+      {
+        "role": "visitador",
+        "content": "En resumen, mantenga presente ESOMED para el paciente con reflujo o dispepsia donde considere razonable evaluar una opción de esomeprazol."
+      }
+    ],
+    "scores": {
+      "apertura": 5,
+      "sondeo": 5,
+      "parafraseo": 3,
+      "argumentacion": 4,
+      "manejo_objeciones": 5,
+      "cierre": 5
+    },
+    "comments": {
+      "apertura": "Abriste con un saludo profesional. Entraste preguntando por su práctica en lugar de promocionar: es la apertura correcta.",
+      "sondeo": "Exploraste con varias preguntas sobre cómo prescribe hoy.",
+      "parafraseo": "Hubo un parafraseo, pero podías haber ordenado mejor la necesidad antes de entrar al argumento.",
+      "argumentacion": "Posicionaste el principio activo esomeprazol. Conectaste con reflujo y dispepsia. Construiste un posicionamiento concreto y recordable. Usaste frases promocionales vacías que el médico no compra.",
+      "manejo_objeciones": "Reconociste la percepción del médico y llevaste la conversación a un punto concreto. Usaste la tecnología Hüttling en el momento correcto y conectada al carácter ácido-lábil de la molécula.",
+      "cierre": "Cerraste con una síntesis explícita. Dejaste el producto ubicado en un perfil de paciente. El cierre fue breve."
+    },
+    "errors": [],
+    "checklist": {
+      "detecto_perfil": "si",
+      "identifico_barrera": "si",
+      "posiciono_principio_activo": "si",
+      "uso_huttling": "si",
+      "diferencio_al_pedirlo": "si"
+    },
+    "areas": [
+      "parafraseo"
+    ],
+    "recommendation": "Para mejorar, parafrasea lo que dice el médico antes de argumentar.",
+    "total": 27,
+    "band": "sobresaliente",
+    "approved": true,
+    "diagnosis": "Dominio demostrado: comprendiste la técnica y lograste aplicarla en conversación."
+  },
+  {
+    "case": "formulador_pantoprazol__no_aprobado",
+    "scenario": "formulador_pantoprazol",
+    "turns": [
+      {
+        "role": "medico",
+        "content": "Yo uso pantoprazol y me funciona."
+      },
+      {
+        "role": "visitador",
+        "content": "Debería dejar de usar pantoprazol porque es inferior. ESOMED es mejor y garantiza mejores resultados."
+      },
+      {
+        "role": "medico",
+        "content": "No veo ninguna razón para continuar esta conversación."
+      },
+      {
+        "role": "visitador",
+        "content": "Tenga presente ESOMED porque es excelente."
+      }
+    ],
+    "scores": {
+      "apertura": 0,
+      "sondeo": 0,
+      "parafraseo": 1,
+      "argumentacion": 0,
+      "manejo_objeciones": 1,
+      "cierre": 2
+    },
+    "comments": {
+      "apertura": "Faltó un saludo claro al inicio. Entraste directamente al producto sin preguntar nada primero.",
+      "sondeo": "No exploraste cómo prescribe el médico. Es el error central de este escenario. Además, mencionaste el producto antes de explorar.",
+      "parafraseo": "No parafraseaste. El médico no sintió que lo escucharas antes de argumentar.",
+      "argumentacion": "No resaltaste el principio activo esomeprazol. Faltó aterrizar el mensaje en reflujo y dispepsia. La argumentación quedó general, sin un espacio concreto para ESOMED. Usaste frases promocionales vacías que el médico no compra. Hiciste afirmaciones absolutas o cifras sin soporte.",
+      "manejo_objeciones": "El médico no llegó a objetar con claridad, así que no hay evidencia directa de manejo de objeciones en esta visita.",
+      "cierre": "No hiciste una síntesis final. Faltó anclar el cierre a un perfil de paciente concreto. El cierre fue breve."
+    },
+    "errors": [
+      "promociona_sin_explorar",
+      "no_identifica_prescripcion",
+      "discurso_generico",
+      "no_resalta_principio_activo",
+      "exagera_beneficios",
+      "cierre_sin_idea"
+    ],
+    "checklist": {
+      "detecto_perfil": "no",
+      "identifico_barrera": "no",
+      "posiciono_principio_activo": "no",
+      "uso_huttling": "no",
+      "diferencio_al_pedirlo": "no"
+    },
+    "areas": [
+      "apertura",
+      "sondeo",
+      "parafraseo",
+      "argumentacion",
+      "manejo_objeciones",
+      "cierre"
+    ],
+    "recommendation": "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre cómo selecciona el IBP.",
+    "total": 4,
+    "band": "deficiente",
+    "approved": false,
+    "diagnosis": "Brecha de ejecución: reconoces la técnica, pero aún no la sostienes bajo presión."
+  }
+]

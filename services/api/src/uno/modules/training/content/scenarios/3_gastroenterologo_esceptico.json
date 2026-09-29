@@ -1,0 +1,129 @@
+{
+  "slug": "gastroenterologo_esceptico",
+  "order": 3,
+  "product": "ESOMED",
+  "segment": "Gastroenterólogo escéptico",
+  "title": "Ser preciso bajo presión",
+  "skill": "Adaptación al especialista",
+  "promise": "Evitar mensajes básicos y ubicar el producto en un paciente concreto.",
+  "instruction": "El especialista conoce la categoría. Sé breve, no le expliques lo obvio y responde exactamente lo que pregunta.",
+  "difficulty": "alto",
+  "doctor": {
+    "name": "Dr. Camilo Restrepo",
+    "gender": "M",
+    "specialty": "Gastroenterología",
+    "years": 22,
+    "personality": "escéptico",
+    "patients_per_day": "12-15",
+    "minutes": 3
+  },
+  "current_molecule": "Alta familiaridad con toda la categoría",
+  "opening_level": "bajo",
+  "barrier": {
+    "code": "rechazo_mensaje_basico",
+    "text": "Rechaza mensajes básicos o genéricos sobre la categoría."
+  },
+  "objective": "Posicionar con precisión",
+  "main_argument": "ESOMED desde el principio activo esomeprazol y su utilidad clínica concreta",
+  "secondary_argument": "Hüttling solo si aporta a la diferenciación",
+  "base_objection": "Eso ya lo conozco",
+  "objections": [
+    "Eso ya lo conozco.",
+    "¿Cuál sería el diferencial real?",
+    "¿En qué paciente concretamente me lo ubica?",
+    "Eso no tiene una diferencia clínica que yo note."
+  ],
+  "greetings": [
+    "Tengo tres minutos. ¿De qué se trata?",
+    "Dígame. Voy corto de tiempo.",
+    "Sí, lo escucho."
+  ],
+  "expected_close": "Cierre con paciente objetivo específico y una razón clara para recordar ESOMED",
+  "bot_behavior": [
+    "Eres el interlocutor más estricto. Tienes poca apertura y proteges activamente tus tres minutos.",
+    "Si el visitador explica conocimientos básicos de la categoría, interrúmpelo y recuérdale que ya los conoces.",
+    "Exige un perfil de paciente concreto y una razón precisa; una respuesta genérica recibe una segunda objeción inmediata.",
+    "No valides una buena visita por cortesía: la señal positiva solo aparece si fue breve, adaptada y clínicamente prudente."
+  ],
+  "lesson": {
+    "title": "Hablar con precisión ante un especialista",
+    "intro": "El gastroenterólogo conoce la categoría y dispone de poco tiempo. Tu valor está en seleccionar lo relevante, no en demostrar cuánto sabes.",
+    "blocks": [
+      { "title": "Protege el tiempo", "text": "Reconoce que tiene tres minutos y formula una pregunta corta. Ser breve significa priorizar, no acelerar un discurso completo." },
+      { "title": "No expliques lo obvio", "text": "Si dice «eso ya lo conozco», valida su experiencia y lleva la conversación al paciente o criterio donde la propuesta podría ser pertinente." },
+      { "title": "Responde exactamente lo preguntado", "text": "Ante «¿en qué paciente?», responde con un perfil. Ante «¿cuál es el diferencial?», ofrece un punto preciso y prudente. No cambies de tema." },
+      { "title": "Cierra con foco", "text": "Resume producto, paciente y razón de recordación en una sola idea. El especialista no necesita escuchar otra vez toda la presentación." }
+    ],
+    "example": "Usted ya conoce la categoría. Quisiera precisar dónde recordar ESOMED: en el paciente con reflujo o dispepsia que considere candidato a esomeprazol.",
+    "avoid": [
+      "Explicar qué es un IBP a un gastroenterólogo.",
+      "Decir que sirve para cualquier paciente.",
+      "Responder con una lista de atributos en lugar de un perfil concreto."
+    ],
+    "sources": ["Integración con Close-Up §5 (caso 3) y §8", "Diálogo modelo de prueba §10", "Flujo de visita esperado, paso 6"]
+  },
+  "quiz": [
+    {
+      "id": "l3_apertura",
+      "skill": "apertura",
+      "question": "El gastroenterólogo dice que solo tiene tres minutos. ¿Cómo respondes?",
+      "options": [
+        { "id": "a", "text": "Comenzar una explicación completa de los IBP." },
+        { "id": "b", "text": "Reconocer el tiempo y hacer una pregunta breve sobre el paciente o criterio relevante.", "correct": true },
+        { "id": "c", "text": "Acelerar el mismo discurso promocional." }
+      ],
+      "explanation": "Adaptarse al tiempo significa priorizar, no hablar más rápido ni eliminar la exploración.",
+      "source": "Flujo de visita esperado, paso 1 · Diálogo modelo §10"
+    },
+    {
+      "id": "l3_conocido",
+      "skill": "manejo_objeciones",
+      "question": "Responde: «Eso ya lo conozco».",
+      "options": [
+        { "id": "a", "text": "Explicar nuevamente qué es el esomeprazol." },
+        { "id": "b", "text": "Reconocer su experiencia y preguntar en qué perfil de paciente tendría sentido precisar la conversación.", "correct": true },
+        { "id": "c", "text": "Insistir en que esta presentación es diferente." }
+      ],
+      "explanation": "No compitas con el conocimiento del especialista; úsalo para llevar la conversación a una aplicación concreta.",
+      "source": "Integración con Close-Up §5 (caso 3)"
+    },
+    {
+      "id": "l3_precision",
+      "skill": "argumentacion",
+      "question": "¿Cuál frase es más precisa?",
+      "options": [
+        { "id": "a", "text": "«Sirve para todos los pacientes con problemas gástricos»." },
+        { "id": "b", "text": "«Quisiera ubicar ESOMED en los pacientes con reflujo o dispepsia que usted considere candidatos a esomeprazol».", "correct": true },
+        { "id": "c", "text": "«Es el mejor IBP disponible»." }
+      ],
+      "explanation": "La precisión define un contexto clínico sin generalizar ni prometer superioridad.",
+      "source": "Integración con Close-Up §8 · Mensajes clave §8"
+    },
+    {
+      "id": "l3_cierre",
+      "skill": "cierre",
+      "question": "¿Qué debe conservar el cierre ante un especialista escéptico?",
+      "options": [
+        { "id": "a", "text": "Una razón concreta y un perfil de paciente.", "correct": true },
+        { "id": "b", "text": "Una lista completa de atributos." },
+        { "id": "c", "text": "Una solicitud de cambio inmediato." }
+      ],
+      "explanation": "Un cierre breve y específico tiene más valor que repetir el material promocional.",
+      "source": "Tabla maestra de segmentación (cierre esperado) · Flujo de visita esperado, paso 6"
+    }
+  ],
+  "approval": {
+    "min_total": 22,
+    "min_competencies": { "argumentacion": 4, "manejo_objeciones": 4, "cierre": 4 },
+    "blocking_errors": ["discurso_generico", "no_responde_objecion", "exagera_beneficios", "no_adapta_especialidad"]
+  },
+  "casting": {
+    "face_id": "rff4f230c435",
+    "face_name": "Thomas",
+    "voice_id": "qdU62IMovREYmfk9SQ4K",
+    "voice_name": "Yohan",
+    "tts_model": "eleven_turbo_v2_5"
+  },
+  "flow": { "turn_taking_patience": "medium", "pal_interruptibility": "low", "idle_engagement": "off" },
+  "sources": ["Tabla maestra de segmentación", "Integración con Close-Up §11 (médico C)", "Diálogo modelo de prueba §10"]
+}

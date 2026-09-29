@@ -1,0 +1,131 @@
+{
+  "slug": "medico_general_indiferenciado",
+  "order": 1,
+  "product": "ESOMED",
+  "segment": "Médico general indiferenciado en IBP",
+  "title": "Explorar antes de presentar",
+  "skill": "Sondeo y escucha",
+  "promise": "Descubrir cómo prescribe el médico antes de hablar de ESOMED.",
+  "instruction": "Tu meta no es vender de inmediato. Haz preguntas, identifica el criterio de prescripción y confirma lo que entendiste.",
+  "difficulty": "intermedio",
+  "doctor": {
+    "name": "Dr. Andrés Gómez",
+    "gender": "M",
+    "specialty": "Medicina General",
+    "years": 12,
+    "personality": "pragmático",
+    "patients_per_day": "25-30",
+    "minutes": 3
+  },
+  "current_molecule": "Cualquier IBP / sin preferencia clara",
+  "opening_level": "medio",
+  "barrier": {
+    "code": "indiferenciacion_categoria",
+    "text": "Percibe que todos los IBP son muy parecidos entre sí."
+  },
+  "objective": "Lograr recordación y diferenciación simple",
+  "main_argument": "ESOMED como opción concreta de esomeprazol para pacientes con reflujo y dispepsia",
+  "secondary_argument": "Tecnología Hüttling como refuerzo diferencial",
+  "base_objection": "La verdad uso el que tenga disponible",
+  "objections": [
+    "La verdad, normalmente uso el que tenga disponible.",
+    "Al final todos los IBP son bastante parecidos.",
+    "No tengo una preferencia particular por alguno.",
+    "Eso lo manejo con cualquier IBP.",
+    "Sí, pero dígame puntualmente qué tendría de diferente."
+  ],
+  "greetings": [
+    "Sí, {trato}, cuénteme, pero breve por favor.",
+    "Lo escucho, pero breve por favor.",
+    "Sí, cuénteme, tengo un momento.",
+    "Dígame puntualmente."
+  ],
+  "expected_close": "Recordación de ESOMED para los pacientes con reflujo y dispepsia que ve a diario",
+  "bot_behavior": [
+    "Este es el nivel de entrada. Mantén una exigencia moderada y permite que el visitador corrija el rumbo una vez.",
+    "Si formula una primera pregunta útil, responde que rotas por disponibilidad; solo revela el motivo de practicidad si profundiza.",
+    "Presenta una objeción principal sobre la similitud de los IBP. No encadenes preguntas de alta presión.",
+    "Una señal positiva requiere que haya explorado, parafraseado y dejado una idea sencilla y recordable."
+  ],
+  "lesson": {
+    "title": "La visita comienza entendiendo, no presentando",
+    "intro": "Antes de hablar de ESOMED necesitas descubrir cómo toma decisiones el médico. El objetivo es sostener una conversación breve que convierta una respuesta general en una necesidad concreta.",
+    "blocks": [
+      { "title": "Abre con una pregunta útil", "text": "Reconoce el tiempo disponible y pregunta cómo decide qué IBP formular. Evita iniciar con atributos, tecnología o beneficios del producto." },
+      { "title": "Profundiza una vez", "text": "Si responde que usa el producto disponible, pregunta qué pesa más: experiencia, disponibilidad, presentación, costumbre o perfil del paciente." },
+      { "title": "Confirma lo que entendiste", "text": "Parafrasea su conducta antes de argumentar. Una frase como «entiendo que usa la categoría por practicidad, sin una preferencia fija» demuestra escucha y organiza la necesidad." },
+      { "title": "Deja una idea recordable", "text": "Ubica ESOMED como una opción concreta de esomeprazol para pacientes con reflujo o dispepsia. Busca recordación, no una promesa inmediata de prescripción." }
+    ],
+    "example": "Doctor, ¿cómo suele definir cuál IBP formular? → ¿Qué pesa más en esa decisión? → Entiendo: lo elige principalmente por practicidad.",
+    "avoid": [
+      "Nombrar ESOMED antes de explorar.",
+      "Aceptar la primera respuesta sin profundizar.",
+      "Confundir parafrasear con repetir exactamente las palabras del médico."
+    ],
+    "sources": ["Flujo de visita esperado, pasos 1 a 3", "Perfil y Mensaje §6–§8", "Mensajes clave y respuestas §5"]
+  },
+  "quiz": [
+    {
+      "id": "l1_apertura",
+      "skill": "apertura",
+      "question": "¿Cuál es la mejor forma de iniciar esta visita?",
+      "options": [
+        { "id": "a", "text": "Presentar inmediatamente las ventajas de ESOMED." },
+        { "id": "b", "text": "Preguntar cómo decide actualmente qué IBP formular.", "correct": true },
+        { "id": "c", "text": "Explicar qué es un IBP antes de hacer preguntas." }
+      ],
+      "explanation": "Primero necesitas comprender la práctica del médico. Presentar el producto antes de explorar impide adaptar el mensaje.",
+      "source": "Flujo de visita esperado, paso 1"
+    },
+    {
+      "id": "l1_profundiza",
+      "skill": "sondeo",
+      "question": "El médico dice: «Uso el que tenga disponible». ¿Qué haces después?",
+      "options": [
+        { "id": "a", "text": "Nombrar la tecnología Hüttling para llamar su atención." },
+        { "id": "b", "text": "Preguntar qué pesa más: disponibilidad, experiencia, presentación o costumbre.", "correct": true },
+        { "id": "c", "text": "Concluir que no conoce las diferencias entre moléculas." }
+      ],
+      "explanation": "Una segunda pregunta identifica la razón detrás de la conducta; no basta con registrar que rota productos.",
+      "source": "Flujo de visita esperado, paso 2 · Mensajes clave §5"
+    },
+    {
+      "id": "l1_parafraseo",
+      "skill": "parafraseo",
+      "question": "¿Cuál respuesta demuestra escucha activa?",
+      "options": [
+        { "id": "a", "text": "«Perfecto, entonces le presento ESOMED»." },
+        { "id": "b", "text": "«Entiendo: usa la categoría por practicidad, sin una preferencia fija».", "correct": true },
+        { "id": "c", "text": "«Todos los médicos me dicen lo mismo»." }
+      ],
+      "explanation": "Parafrasear confirma la necesidad y crea una transición natural hacia el argumento.",
+      "source": "Flujo de visita esperado, paso 3 · Guion modelo §8"
+    },
+    {
+      "id": "l1_cierre",
+      "skill": "cierre",
+      "question": "¿Qué cierre corresponde a este perfil?",
+      "options": [
+        { "id": "a", "text": "Pedirle que cambie todas sus fórmulas desde hoy." },
+        { "id": "b", "text": "Dejar a ESOMED como opción recordable en pacientes con reflujo y dispepsia.", "correct": true },
+        { "id": "c", "text": "Repetir todo el argumento técnico." }
+      ],
+      "explanation": "El resultado realista es recordación en un perfil de paciente, no una promesa inmediata de prescripción.",
+      "source": "Flujo de visita esperado, paso 6 · Guion modelo §14"
+    }
+  ],
+  "approval": {
+    "min_total": 18,
+    "min_competencies": { "sondeo": 4 },
+    "blocking_errors": ["promociona_sin_explorar", "no_identifica_prescripcion"]
+  },
+  "casting": {
+    "face_id": "r621a6013477",
+    "face_name": "Raj · Doctor",
+    "voice_id": "57D8YIbQSuE3REDPO6Vm",
+    "voice_name": "Horacio",
+    "tts_model": "eleven_turbo_v2_5"
+  },
+  "flow": { "turn_taking_patience": "low", "pal_interruptibility": "medium", "idle_engagement": "eager" },
+  "sources": ["Tabla maestra de segmentación", "Variables del escenario para app", "Guion modelo de simulación", "Diálogo modelo de prueba"]
+}

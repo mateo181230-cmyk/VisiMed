@@ -1,0 +1,329 @@
+{
+  "_leeme": "Casos de geocerca compartidos por el teléfono (TypeScript) y el servidor (Python). Doc 01 §9.3. distancia_m = haversine con radio terrestre 6 371 000 m, redondeado a entero con mitad hacia arriba (floor(x + 0.5)), y se compara ya redondeada. Orden de decisión: sin lectura → sin_gps; precision_m > 100 → imprecisa; sin referencia → sin_referencia; distancia_m − precision_m ≤ radio_m → verificada, si no lejos. En imprecisa, distancia_m se informa si hay referencia. Este archivo es la fuente de verdad: si cambia una regla, cambia aquí y en ambas implementaciones.",
+  "version": 1,
+  "casos": [
+    {
+      "nombre": "Mismo punto que la referencia",
+      "lectura": {
+        "lat": 4.6765,
+        "lng": -74.0481,
+        "precision_m": 10
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 0
+      }
+    },
+    {
+      "nombre": "A 100 m al sur",
+      "lectura": {
+        "lat": 4.675601,
+        "lng": -74.0481,
+        "precision_m": 10
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 100
+      }
+    },
+    {
+      "nombre": "Borde exacto: distancia − precisión = radio",
+      "lectura": {
+        "lat": 4.678209,
+        "lng": -74.0481,
+        "precision_m": 40
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 190
+      }
+    },
+    {
+      "nombre": "Un metro más allá del borde",
+      "lectura": {
+        "lat": 4.678218,
+        "lng": -74.0481,
+        "precision_m": 40
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "lejos",
+        "distancia_m": 191
+      }
+    },
+    {
+      "nombre": "A 850 m",
+      "lectura": {
+        "lat": 4.684144,
+        "lng": -74.0481,
+        "precision_m": 15
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "lejos",
+        "distancia_m": 850
+      }
+    },
+    {
+      "nombre": "Institución (radio 300): dentro",
+      "lectura": {
+        "lat": 4.679198,
+        "lng": -74.0481,
+        "precision_m": 20
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 300,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 300
+      }
+    },
+    {
+      "nombre": "Institución (radio 300): fuera",
+      "lectura": {
+        "lat": 4.679558,
+        "lng": -74.0481,
+        "precision_m": 20
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 300,
+      "esperado": {
+        "estado": "lejos",
+        "distancia_m": 340
+      }
+    },
+    {
+      "nombre": "Precisión 100 m es el límite útil, no imprecisa",
+      "lectura": {
+        "lat": 4.67695,
+        "lng": -74.0481,
+        "precision_m": 100
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 50
+      }
+    },
+    {
+      "nombre": "Precisión 101 m es imprecisa",
+      "lectura": {
+        "lat": 4.67695,
+        "lng": -74.0481,
+        "precision_m": 101
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "imprecisa",
+        "distancia_m": 50
+      }
+    },
+    {
+      "nombre": "Precisión 300 m sobre la referencia es imprecisa",
+      "lectura": {
+        "lat": 4.6765,
+        "lng": -74.0481,
+        "precision_m": 300
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "imprecisa",
+        "distancia_m": 0
+      }
+    },
+    {
+      "nombre": "Imprecisa gana aunque esté a 2 km",
+      "lectura": {
+        "lat": 4.694486,
+        "lng": -74.0481,
+        "precision_m": 150
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "imprecisa",
+        "distancia_m": 2000
+      }
+    },
+    {
+      "nombre": "Sin referencia, buena precisión",
+      "lectura": {
+        "lat": 4.677219,
+        "lng": -74.0481,
+        "precision_m": 25
+      },
+      "referencia": null,
+      "radio_m": 150,
+      "esperado": {
+        "estado": "sin_referencia",
+        "distancia_m": null
+      }
+    },
+    {
+      "nombre": "Sin referencia, imprecisa",
+      "lectura": {
+        "lat": 4.677219,
+        "lng": -74.0481,
+        "precision_m": 250
+      },
+      "referencia": null,
+      "radio_m": 150,
+      "esperado": {
+        "estado": "imprecisa",
+        "distancia_m": null
+      }
+    },
+    {
+      "nombre": "Sin lectura, con referencia",
+      "lectura": null,
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "sin_gps",
+        "distancia_m": null
+      }
+    },
+    {
+      "nombre": "Sin lectura y sin referencia",
+      "lectura": null,
+      "referencia": null,
+      "radio_m": 150,
+      "esperado": {
+        "estado": "sin_gps",
+        "distancia_m": null
+      }
+    },
+    {
+      "nombre": "La incertidumbre cuenta a favor: d=200, p=60",
+      "lectura": {
+        "lat": 4.678299,
+        "lng": -74.0481,
+        "precision_m": 60
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 200
+      }
+    },
+    {
+      "nombre": "d=250, p=60 ya no alcanza",
+      "lectura": {
+        "lat": 4.678748,
+        "lng": -74.0481,
+        "precision_m": 60
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "lejos",
+        "distancia_m": 250
+      }
+    },
+    {
+      "nombre": "Desplazamiento este–oeste de 500 m (lejos)",
+      "lectura": {
+        "lat": 4.6765,
+        "lng": -74.052612,
+        "precision_m": 20
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "lejos",
+        "distancia_m": 500
+      }
+    },
+    {
+      "nombre": "Mismo desplazamiento con radio 500 (verificada)",
+      "lectura": {
+        "lat": 4.6765,
+        "lng": -74.052612,
+        "precision_m": 20
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 500,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 500
+      }
+    },
+    {
+      "nombre": "Precisión 0 justo en el radio",
+      "lectura": {
+        "lat": 4.677849,
+        "lng": -74.0481,
+        "precision_m": 0
+      },
+      "referencia": {
+        "lat": 4.6765,
+        "lng": -74.0481
+      },
+      "radio_m": 150,
+      "esperado": {
+        "estado": "verificada",
+        "distancia_m": 150
+      }
+    }
+  ]
+}

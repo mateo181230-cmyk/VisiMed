@@ -1,0 +1,29 @@
+# Dependencias y entornos
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Compilación
+dist/
+apps/web/dev-dist/
+*.tsbuildinfo
+
+# Secretos y datos locales: NUNCA al repositorio
+.env
+.env.*
+!.env.example
+services/api/var/
+*.db
+*.db-shm
+*.db-wal
+*.eml
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

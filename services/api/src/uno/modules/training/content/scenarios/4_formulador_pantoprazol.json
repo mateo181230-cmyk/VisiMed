@@ -1,0 +1,129 @@
+{
+  "slug": "formulador_pantoprazol",
+  "order": 4,
+  "product": "ESOMED",
+  "segment": "Médico formulador de pantoprazol",
+  "title": "Trabajar un hábito establecido",
+  "skill": "Manejo de objeciones y conversión",
+  "promise": "Abrir una alternativa sin desacreditar lo que ya le funciona a la médica.",
+  "instruction": "No intentes demostrar que la médica está equivocada. Comprende su hábito y construye un espacio de consideración para un paciente concreto.",
+  "difficulty": "alto",
+  "doctor": {
+    "name": "Dra. Lucía Mancera",
+    "gender": "F",
+    "specialty": "Medicina General / Interna",
+    "years": 15,
+    "personality": "práctica y con hábito establecido",
+    "patients_per_day": "25-30",
+    "minutes": 3
+  },
+  "current_molecule": "Pantoprazol (marca dominante)",
+  "opening_level": "medio_bajo",
+  "barrier": {
+    "code": "habito_prescriptivo",
+    "text": "Tiene un hábito de fórmula establecido y le funciona."
+  },
+  "objective": "Conversión de molécula",
+  "main_argument": "Valor clínico del esomeprazol en control ácido y sintomatología, sin exagerar",
+  "secondary_argument": "Hüttling como refuerzo, no como eje principal",
+  "base_objection": "Ya me funciona pantoprazol",
+  "objections": [
+    "Vengo usando pantoprazol y me ha funcionado bien.",
+    "¿Por qué tendría que cambiar?",
+    "La efectividad entre uno y otro no varía tanto.",
+    "Mis pacientes responden bien con lo que uso."
+  ],
+  "greetings": [
+    "Sí, cuénteme. Aunque le adelanto que yo vengo usando pantoprazol.",
+    "Sí, dígame. Yo normalmente formulo pantoprazol.",
+    "Lo escucho, pero ya tengo mi esquema definido."
+  ],
+  "expected_close": "Recordación de ESOMED para pacientes donde se busca control sintomático y ácido más consistente",
+  "bot_behavior": [
+    "Mantén el hábito con pantoprazol durante toda la visita. No aceptes un cambio general de molécula.",
+    "Si desacredita tu tratamiento actual, cierra la apertura y exige respeto por tu experiencia clínica.",
+    "Si reconoce tu experiencia, permite explorar en qué paciente considerarías una alternativa.",
+    "El máximo resultado realista es considerar ESOMED en un perfil concreto; nunca prometas reemplazar pantoprazol."
+  ],
+  "lesson": {
+    "title": "Abrir una alternativa sin atacar el hábito actual",
+    "intro": "La médica ya tiene una conducta que considera exitosa. La conversación fracasa si intentas demostrar que está equivocada; primero debes comprender por qué mantiene ese hábito.",
+    "blocks": [
+      { "title": "Valida la experiencia", "text": "Reconocer que pantoprazol le funciona no significa renunciar a tu objetivo. Reduce la confrontación y crea permiso para explorar." },
+      { "title": "Busca la excepción relevante", "text": "Pregunta en qué paciente, síntoma o situación consideraría otra molécula. No propongas un reemplazo general." },
+      { "title": "Presenta una alternativa", "text": "Ubica ESOMED como opción de esomeprazol dentro del perfil descubierto. Evita comparar desacreditando el tratamiento actual." },
+      { "title": "Define un avance realista", "text": "El éxito es que recuerde y considere ESOMED en un caso concreto. Una promesa de cambiar todas sus fórmulas no sería creíble." }
+    ],
+    "example": "Entiendo que pantoprazol le funciona. ¿En qué perfil consideraría evaluar otra molécula? Para ese caso concreto quisiera dejarle presente ESOMED.",
+    "avoid": [
+      "Decir que pantoprazol es inferior o que debería dejar de usarlo.",
+      "Discutir contra la experiencia de la médica.",
+      "Pedir una conversión total en una sola visita."
+    ],
+    "sources": ["Tabla maestra de segmentación (formulador de pantoprazol)", "Flujo de visita esperado, paso 5", "Mensajes clave y respuestas §7"]
+  },
+  "quiz": [
+    {
+      "id": "l4_habito",
+      "skill": "parafraseo",
+      "question": "La médica dice: «Pantoprazol me funciona bien». ¿Cuál es la mejor respuesta inicial?",
+      "options": [
+        { "id": "a", "text": "«Esomeprazol es mejor»." },
+        { "id": "b", "text": "«Entiendo que tiene una experiencia positiva. ¿En qué perfiles lo utiliza habitualmente?».", "correct": true },
+        { "id": "c", "text": "«Debería cambiar porque es una molécula antigua»." }
+      ],
+      "explanation": "Reconocer una experiencia válida reduce la confrontación y permite descubrir si existe un espacio relevante.",
+      "source": "Tabla maestra de segmentación · Integración con Close-Up §5 (caso 2)"
+    },
+    {
+      "id": "l4_objecion",
+      "skill": "manejo_objeciones",
+      "question": "¿Qué significa manejar bien esta objeción?",
+      "options": [
+        { "id": "a", "text": "Lograr que admita que estaba equivocada." },
+        { "id": "b", "text": "Validar su hábito y construir un caso concreto donde pueda considerar ESOMED.", "correct": true },
+        { "id": "c", "text": "Cambiar rápidamente de tema." }
+      ],
+      "explanation": "El objetivo realista es abrir consideración, no conseguir una conversión total en una sola visita.",
+      "source": "Flujo de visita esperado, paso 5 · Mensajes clave §7"
+    },
+    {
+      "id": "l4_competidor",
+      "skill": "argumentacion",
+      "question": "¿Cuál frase debes evitar?",
+      "options": [
+        { "id": "a", "text": "«Comprendo que pantoprazol le ha funcionado»." },
+        { "id": "b", "text": "«Exploremos si existe algún perfil donde considere esomeprazol»." },
+        { "id": "c", "text": "«Pantoprazol es inferior y debería dejar de usarlo».", "correct": true }
+      ],
+      "explanation": "Desacreditar la elección actual deteriora la confianza y convierte la conversación en una confrontación.",
+      "source": "Guion modelo §13 · Formato de retroalimentación §5"
+    },
+    {
+      "id": "l4_resultado",
+      "skill": "cierre",
+      "question": "¿Cuál es un resultado exitoso y realista para esta visita?",
+      "options": [
+        { "id": "a", "text": "Que prometa reemplazar todas sus fórmulas." },
+        { "id": "b", "text": "Que recuerde ESOMED como alternativa en un perfil de paciente acordado.", "correct": true },
+        { "id": "c", "text": "Que acepte que todas las moléculas son iguales." }
+      ],
+      "explanation": "La consideración futura en un caso concreto es una señal de avance creíble.",
+      "source": "Tabla maestra de segmentación (cierre esperado)"
+    }
+  ],
+  "approval": {
+    "min_total": 24,
+    "min_competencies": { "manejo_objeciones": 4, "cierre": 4 },
+    "blocking_errors": ["promociona_sin_explorar", "no_responde_objecion", "exagera_beneficios", "desacredita_competidor"]
+  },
+  "casting": {
+    "face_id": "rb68659d2f28",
+    "face_name": "Dr. Lizzie",
+    "voice_id": "SplyIQAjgy4DKGAnOrHi",
+    "voice_name": "Clau",
+    "tts_model": "eleven_turbo_v2_5"
+  },
+  "flow": { "turn_taking_patience": "medium", "pal_interruptibility": "low", "idle_engagement": "off" },
+  "sources": ["Tabla maestra de segmentación", "Integración con Close-Up §11 (médico B)"]
+}

@@ -1,0 +1,68 @@
+# Entorno local con PostgreSQL 16 (el mismo motor de producción, doc 01 §6).
+#
+#   docker compose -f infra/docker-compose.yml up --build
+#
+# NOTA: escrito y validado con `docker compose config`, pero no ejecutado todavía (Docker
+# Desktop estaba apagado al crearlo). La API y las pruebas ya se verificaron contra PostgreSQL 16
+# real con el paquete `pgserver`; este archivo es para levantar el sistema completo.
+name: uno-visitas
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: uno
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uno-dev-only}
+      POSTGRES_DB: uno
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uno -d uno"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    # Buzón de pruebas: los correos de avisos se ven en http://localhost:8025
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
+  api: &api
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    environment: &api-env
+      UNO_ENV: dev
+      UNO_DATABASE_URL: postgresql+asyncpg://uno:${POSTGRES_PASSWORD:-uno-dev-only}@postgres:5432/uno
+      UNO_JWT_SECRET: ${UNO_JWT_SECRET:?defínelo en un archivo .env junto al compose}
+      UNO_PUSH_BACKEND: ${UNO_PUSH_BACKEND:-log}
+      UNO_VAPID_PUBLIC_KEY: ${UNO_VAPID_PUBLIC_KEY:-}
+      UNO_VAPID_PRIVATE_KEY: ${UNO_VAPID_PRIVATE_KEY:-}
+      UNO_EMAIL_BACKEND: smtp
+      UNO_SMTP_HOST: mailpit
+      UNO_SMTP_PORT: "1025"
+      UNO_APP_BASE_URL: ${UNO_APP_BASE_URL:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "python -m uno.cli db-upgrade &&
+             python -m uno.cli seed-lines &&
+             uvicorn uno.main:app_factory --factory --host 0.0.0.0 --port 8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    <<: *api
+    ports: []
+    command: python -m uno.cli worker
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  pgdata:

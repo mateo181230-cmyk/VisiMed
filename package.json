@@ -1,0 +1,13 @@
+{
+  "name": "uno-visitas",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "web:dev": "pnpm --dir apps/web dev",
+    "web:build": "pnpm --dir apps/web build",
+    "web:test": "pnpm --dir apps/web test",
+    "web:typecheck": "pnpm --dir apps/web typecheck",
+    "gen:api": "uv run --directory services/api python -m uno.export_openapi > apps/web/src/api/openapi.json && pnpm --dir apps/web gen:api"
+  }
+}

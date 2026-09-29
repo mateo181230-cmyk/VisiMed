@@ -1,0 +1,129 @@
+{
+  "slug": "internista_exigente",
+  "order": 2,
+  "product": "ESOMED",
+  "segment": "Internista que exige razón clara para diferenciar",
+  "title": "Construir diferenciación clínica",
+  "skill": "Argumentación conectada",
+  "promise": "Convertir lo descubierto en una razón clínica clara y prudente.",
+  "instruction": "La internista no acepta promoción. Conecta el perfil del paciente, el principio activo y el valor de ESOMED sin declarar superioridad.",
+  "difficulty": "medio_alto",
+  "doctor": {
+    "name": "Dra. Carolina Peña",
+    "gender": "F",
+    "specialty": "Medicina Interna",
+    "years": 18,
+    "personality": "analítica",
+    "patients_per_day": "15-20",
+    "minutes": 4
+  },
+  "current_molecule": "Usa IBP, pero pide mayor justificación",
+  "opening_level": "medio",
+  "barrier": {
+    "code": "exigencia_diferenciacion",
+    "text": "No le basta una visita de recordación; pide lógica clínica."
+  },
+  "objective": "Construir diferenciación clínica",
+  "main_argument": "Esomeprazol con respaldo científico y valor en control ácido potente y sostenido",
+  "secondary_argument": "Hüttling como apoyo farmacotécnico",
+  "base_objection": "¿Qué diferencia real tiene?",
+  "objections": [
+    "¿Qué diferencia real tiene frente a lo que ya uso?",
+    "¿Qué me aporta eso en la práctica?",
+    "Necesito una razón clínica, no promoción.",
+    "Eso que me dice aplica a toda la categoría."
+  ],
+  "greetings": [
+    "Buenos días. Dígame concretamente qué me trae.",
+    "Buenos días, lo escucho. Vaya al punto, por favor.",
+    "Dígame, ¿de qué se trata?"
+  ],
+  "expected_close": "ESOMED como opción de esomeprazol en pacientes donde busca control ácido más consistente",
+  "bot_behavior": [
+    "Exige una razón clínica aplicable. Después del sondeo pregunta qué aporta la propuesta en la práctica.",
+    "Si recibe adjetivos promocionales, pide precisión; si escucha cifras o superioridad, solicita el soporte.",
+    "No aceptes la tecnología del producto como respuesta completa: pregunta cómo se relaciona con el paciente o la necesidad descubierta.",
+    "Solo muestra apertura si la argumentación conecta necesidad, paciente y producto sin exagerar."
+  ],
+  "lesson": {
+    "title": "De la necesidad a una razón clínica prudente",
+    "intro": "La internista no necesita entusiasmo promocional: necesita entender por qué tu propuesta tiene sentido dentro de la situación que acaba de describir.",
+    "blocks": [
+      { "title": "Construye un puente", "text": "Comienza el argumento retomando lo descubierto: «para ese perfil que usted describe…». Así evitas presentar un discurso intercambiable." },
+      { "title": "Nombra producto y principio activo", "text": "Presenta ESOMED como esomeprazol y ubícalo en un contexto concreto de reflujo o dispepsia. No conviertas el mensaje en una explicación básica de la categoría." },
+      { "title": "Sustenta sin exagerar", "text": "No inventes cifras, estudios o superioridades. Si no puedes respaldar una afirmación, reconoce el límite y vuelve al mensaje autorizado." },
+      { "title": "Usa Hüttling como apoyo", "text": "Menciónalo después de identificar la barrera, conectado con la protección del esomeprazol ácido-lábil y su liberación intestinal. No lo uses como eslogan ni como prueba automática de superioridad clínica." }
+    ],
+    "example": "Para ese paciente que usted describe, quisiera ubicar ESOMED, esomeprazol, como una opción concreta; Hüttling funciona aquí como apoyo farmacotécnico.",
+    "avoid": [
+      "Usar «excelente», «avanzado» o «el mejor» como argumento.",
+      "Mencionar una cifra sin poder mostrar su soporte.",
+      "Responder una pregunta clínica únicamente con Hüttling."
+    ],
+    "sources": ["Flujo de visita esperado, paso 4", "Mensajes clave y respuestas §4A–§4D", "Variables del escenario para app §15"]
+  },
+  "quiz": [
+    {
+      "id": "l2_necesidad",
+      "skill": "sondeo",
+      "question": "Antes de diferenciar ESOMED, ¿qué información necesitas?",
+      "options": [
+        { "id": "a", "text": "Solo saber cuántos pacientes atiende." },
+        { "id": "b", "text": "Conocer qué usa, en qué pacientes y qué resultado clínico prioriza.", "correct": true },
+        { "id": "c", "text": "Confirmar que recibió muestras." }
+      ],
+      "explanation": "La argumentación clínica solo es pertinente si parte de una necesidad previamente identificada.",
+      "source": "Perfil y Mensaje §7 · Flujo de visita esperado, paso 2"
+    },
+    {
+      "id": "l2_argumento",
+      "skill": "argumentacion",
+      "question": "¿Cuál argumento está mejor construido?",
+      "options": [
+        { "id": "a", "text": "«ESOMED es excelente y muy avanzado»." },
+        { "id": "b", "text": "«Para ese perfil que busca ubicar, ESOMED ofrece esomeprazol como una opción concreta de control ácido».", "correct": true },
+        { "id": "c", "text": "«Todos los IBP funcionan igual, pero recuerde nuestra marca»." }
+      ],
+      "explanation": "Un argumento útil conecta la necesidad expresada con el producto; los adjetivos promocionales no diferencian.",
+      "source": "Flujo de visita esperado, paso 4 · Mensajes clave §8"
+    },
+    {
+      "id": "l2_soporte",
+      "skill": "argumentacion",
+      "question": "La médica pide evidencia de una afirmación que no puedes sustentar. ¿Qué haces?",
+      "options": [
+        { "id": "a", "text": "Repetirla con más seguridad." },
+        { "id": "b", "text": "Reconocer el límite y volver a un mensaje autorizado y verificable.", "correct": true },
+        { "id": "c", "text": "Inventar una cifra aproximada." }
+      ],
+      "explanation": "La credibilidad clínica exige no improvisar estudios, cifras ni superioridades absolutas.",
+      "source": "Mensajes clave §4D · Guion modelo §13"
+    },
+    {
+      "id": "l2_huttling",
+      "skill": "manejo_objeciones",
+      "question": "¿Cuándo aporta mencionar la tecnología Hüttling?",
+      "options": [
+        { "id": "a", "text": "En la primera frase, como eslogan." },
+        { "id": "b", "text": "Después de identificar la barrera y conectada con la protección del esomeprazol ácido-lábil.", "correct": true },
+        { "id": "c", "text": "Siempre que la médica guarde silencio." }
+      ],
+      "explanation": "Hüttling es un refuerzo contextual, no el sustituto de la exploración ni una prueba automática de superioridad.",
+      "source": "Variables del escenario §15 · Guion modelo §10"
+    }
+  ],
+  "approval": {
+    "min_total": 20,
+    "min_competencies": { "argumentacion": 4, "manejo_objeciones": 3 },
+    "blocking_errors": ["discurso_generico", "no_responde_objecion", "exagera_beneficios"]
+  },
+  "casting": {
+    "face_id": "rc6fedbe63ea",
+    "face_name": "Dr. Carol",
+    "voice_id": "irla3teuChAApguKnzms",
+    "voice_name": "Diana García",
+    "tts_model": "eleven_turbo_v2_5"
+  },
+  "flow": { "turn_taking_patience": "medium", "pal_interruptibility": "low", "idle_engagement": "patient" },
+  "sources": ["Tabla maestra de segmentación", "Integración con Close-Up §5 (caso 2)", "Diálogo modelo de prueba §10"]
+}

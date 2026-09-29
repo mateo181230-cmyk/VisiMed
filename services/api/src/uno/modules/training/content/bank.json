@@ -1,0 +1,109 @@
+{
+  "note": "Banco de mensajes aprobados: texto literal de los documentos de Novamed. Toda «mejor respuesta» que muestre la app sale de aquí. Única adaptación: el vocativo «doctor» pasa a «doctora» cuando la médica del escenario es mujer.",
+  "messages": [
+    {
+      "id": "APERTURA_1",
+      "area": "apertura",
+      "text": "Doctor, buenos días. Quería tomarle un momento para conversar sobre los pacientes con reflujo y dispepsia que usted ve con frecuencia y cómo suele manejar hoy los IBP en ese contexto.",
+      "source": "Flujo de visita esperado, paso 1"
+    },
+    {
+      "id": "APERTURA_2",
+      "area": "apertura",
+      "text": "Doctor, sé que usted ve con frecuencia pacientes con síntomas digestivos altos. Quisiera preguntarle brevemente cómo define hoy qué IBP usar en esos casos.",
+      "source": "Flujo de visita esperado, paso 1"
+    },
+    {
+      "id": "SONDEO_1",
+      "area": "sondeo",
+      "text": "Doctor, en los pacientes con reflujo o dispepsia, ¿cómo suele definir cuál IBP formular?",
+      "source": "Mensajes clave y respuestas §5"
+    },
+    {
+      "id": "SONDEO_2",
+      "area": "sondeo",
+      "text": "En su práctica, ¿qué pesa más al momento de formular: costumbre, experiencia, presentación o facilidad de uso?",
+      "source": "Mensajes clave y respuestas §5"
+    },
+    {
+      "id": "PARAFRASEO_1",
+      "area": "parafraseo",
+      "text": "Entiendo, doctor. En su caso, más que una preferencia fija por una molécula, suele definirlo de forma práctica según el tipo de paciente y la experiencia de uso.",
+      "source": "Flujo de visita esperado, paso 3"
+    },
+    {
+      "id": "PARAFRASEO_2",
+      "area": "parafraseo",
+      "text": "Entonces, doctor, en estos pacientes usted ya maneja la categoría, pero no necesariamente con una preferencia tan marcada por un IBP específico.",
+      "source": "Flujo de visita esperado, paso 3"
+    },
+    {
+      "id": "ARGUMENTO_1",
+      "area": "argumentacion",
+      "text": "Justamente, doctor, cuando el médico ya utiliza la categoría pero no tiene una preferencia tan definida, es importante poder dejarle una opción bien ubicada en su práctica diaria para esos pacientes con reflujo y dispepsia.",
+      "source": "Flujo de visita esperado, paso 4"
+    },
+    {
+      "id": "HUTTLING_1",
+      "area": "argumentacion",
+      "text": "Además, ESOMED cuenta con tecnología Hüttling, basada en microgránulos uniformes con recubrimiento gastroresistente, diseñada para proteger el esomeprazol del ambiente ácido gástrico y permitir su liberación intestinal.",
+      "source": "Flujo de visita esperado, paso 4"
+    },
+    {
+      "id": "OBJECION_1",
+      "area": "manejo_objeciones",
+      "trigger": "Al final todos los IBP son parecidos.",
+      "text": "Entiendo, doctor. De hecho, muchos médicos lo ven así al inicio. Por eso me interesa más entender cómo define usted cuál usar en la consulta diaria y en qué tipo de paciente le resulta más útil una opción concreta.",
+      "source": "Mensajes clave y respuestas §7, objeción 1"
+    },
+    {
+      "id": "OBJECION_2",
+      "area": "manejo_objeciones",
+      "trigger": "Yo realmente uso el que tenga disponible.",
+      "text": "Claro, y eso pasa mucho en consulta. Justamente por eso quiero dejarle una idea concreta para que ESOMED le quede ubicado cuando vea esos pacientes con reflujo o dispepsia que maneja con más frecuencia.",
+      "source": "Mensajes clave y respuestas §7, objeción 2",
+      "prefer_for": ["medico_general_indiferenciado"]
+    },
+    {
+      "id": "OBJECION_3",
+      "area": "manejo_objeciones",
+      "trigger": "No tengo una preferencia particular por alguno.",
+      "text": "Eso me parece importante, doctor, porque precisamente cuando no hay una preferencia tan marcada es donde una visita bien enfocada puede ayudar a darle un lugar más claro a una opción dentro de su práctica.",
+      "source": "Mensajes clave y respuestas §7, objeción 3"
+    },
+    {
+      "id": "OBJECION_4",
+      "area": "manejo_objeciones",
+      "trigger": "Eso lo manejo con cualquier IBP.",
+      "text": "Totalmente, doctor, y no se trata de desconocer eso. Más bien quisiera aterrizar cómo selecciona usted en la práctica y en qué contexto le podría quedar mejor ubicado ESOMED.",
+      "source": "Mensajes clave y respuestas §7, objeción 4",
+      "prefer_for": ["formulador_pantoprazol"]
+    },
+    {
+      "id": "OBJECION_5",
+      "area": "manejo_objeciones",
+      "trigger": "Sí, pero dígame puntualmente qué tendría de diferente.",
+      "text": "Más que repetirle la categoría, doctor, el punto es poder dejarle a ESOMED una ubicación más clara dentro de los pacientes con reflujo y dispepsia que usted ve todos los días.",
+      "source": "Mensajes clave y respuestas §7, objeción 5",
+      "prefer_for": ["internista_exigente", "gastroenterologo_esceptico"]
+    },
+    {
+      "id": "OBJECION_HUTTLING",
+      "area": "manejo_objeciones",
+      "text": "Entiendo, doctor. Justamente, además de ese posicionamiento clínico, ESOMED tiene un punto farmacotécnico interesante en su tecnología Hüttling, con microgránulos uniformes y recubrimiento gastroresistente para proteger el activo del medio ácido y permitir su liberación intestinal.",
+      "source": "Flujo de visita esperado, paso 5"
+    },
+    {
+      "id": "CIERRE_1",
+      "area": "cierre",
+      "text": "En resumen, doctor, quisiera dejarle a ESOMED como una opción clara para esos pacientes con reflujo y dispepsia en los que usted ya utiliza IBP, pero sin una preferencia tan marcada por una molécula específica.",
+      "source": "Guion modelo de simulación §14"
+    },
+    {
+      "id": "CIERRE_2",
+      "area": "cierre",
+      "text": "Quisiera que recuerde a ESOMED como una alternativa bien ubicada dentro de esos pacientes digestivos altos que maneja con frecuencia, con el soporte adicional de su tecnología Hüttling en microgránulos gastroresistentes.",
+      "source": "Guion modelo de simulación §14"
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+"""Entrenar: cliente de Tavus (sin red, con ``httpx.MockTransport``) y publicación de PAL."""
+
+from __future__ import annotations
+
+import json
+import re
+from typing import Any
+
+import httpx
+import pytest
+from sqlalchemy import select
+
+from uno.config import Settings
+from uno.modules.training import pal
+from uno.modules.training.content import load_catalog
+from uno.modules.training.models import TrainingScenarioVersion
+from uno.modules.training.provider import (
+    PAL_PREFIX,
+    ConversationRequest,
+    ProviderError,
+    TavusProvider,
+    transcript_from_conversation,
+)
+
+from .conftest import Env
+
+
+class FakeTavus:
+    """Tavus en memoria: registra lo que recibe y responde como la API real."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, dict[str, Any] | None]] = []
+        self.pals: dict[str, dict[str, Any]] = {
+            "p_ajeno": {"pal_id": "p_ajeno", "pal_name": "Feria Jetour · Gloria"},
+        }
+        self.conversation_status = 200
+
+    def handler(self, request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content) if request.content else None
+        self.calls.append((request.method, request.url.path, body))
+        path = request.url.path
+        if request.method == "POST" and path == "/v2/conversations":
+            if self.conversation_status != 200:
+                return httpx.Response(
+                    self.conversation_status, json={"message": "The user is out of credits."}
+                )
+            return httpx.Response(
+                200,
+                json={"conversation_id": "c123", "conversation_url": "https://tavus.daily.co/c123"},
+            )
+        if request.method == "POST" and path == "/v2/pals":
+            pal_id = f"p{len(self.pals)}"
+            # Como la API real: quita puntos, guiones y paréntesis del nombre («Dr.» → «Dr»).
+            name = re.sub(r"[.()\-]", "", body["pal_name"])  # type: ignore[index]
+            self.pals[pal_id] = {"pal_id": pal_id, "pal_name": name}
+            return httpx.Response(200, json={"pal_id": pal_id})
+        if request.method == "GET" and path == "/v2/pals":
+            return httpx.Response(200, json={"data": list(self.pals.values())})
+        if path.startswith("/v2/pals/"):
+            pal_id = path.rsplit("/", 1)[1]
+            if pal_id not in self.pals:
+                return httpx.Response(404, json={"message": "not found"})
+            if request.method == "GET":
+                return httpx.Response(200, json=self.pals[pal_id])
+            if request.method == "DELETE":
+                del self.pals[pal_id]
+                return httpx.Response(204)
+        if request.method == "GET" and path == "/v2/conversations/c123":
+            return httpx.Response(
+                200,
+                json={
+                    "status": "ended",
+                    "events": [
+                        {"event_type": "system.replica_joined", "properties": {}},
+                        {
+                            "event_type": "application.transcription_ready",
+                            "properties": {
+                                "transcript": [
+                                    {"role": "system", "content": "prompt"},
+                                    {"role": "assistant", "content": "Tengo tres minutos."},
+                                    {
+                                        "role": "user",
+                                        "content": "Doctor, ¿cómo define hoy qué IBP usar?",
+                                        "seconds_from_start": 4.5,
+                                        "duration": 3.1,
+                                    },
+                                ]
+                            },
+                        },
+                    ],
+                },
+            )
+        if request.method == "POST" and path == "/v2/conversations/c123/end":
+            return httpx.Response(200, json={})
+        if request.method == "DELETE" and path == "/v2/conversations/c123":
+            return httpx.Response(204)
+        return httpx.Response(418, json={"message": f"ruta no simulada {path}"})
+
+    def provider(self) -> TavusProvider:
+        client = httpx.AsyncClient(
+            base_url="https://tavusapi.com", transport=httpx.MockTransport(self.handler)
+        )
+        return TavusProvider(api_key="k", client=client)
+
+
+def request(**overrides: Any) -> ConversationRequest:
+    values: dict[str, Any] = {
+        "pal_id": "p1",
+        "name": "UNO Entrenar a1",
+        "context": "La persona se llama Ana.",
+        "greeting": "Tengo tres minutos. ¿De qué se trata?",
+        "callback_url": None,
+        "max_seconds": 300,
+        "audio_only": False,
+        "scenario_slug": "gastroenterologo_esceptico",
+    }
+    values.update(overrides)
+    return ConversationRequest(**values)
+
+
+async def test_create_conversation_sends_the_attempt_and_nothing_else() -> None:
+    tavus = FakeTavus()
+    created = await tavus.provider().create_conversation(request())
+    assert created.conversation_id == "c123"
+    method, path, body = tavus.calls[-1]
+    assert (method, path) == ("POST", "/v2/conversations")
+    assert body is not None
+    assert body["pal_id"] == "p1"
+    assert body["custom_greeting"] == "Tengo tres minutos. ¿De qué se trata?"
+    assert body["conversational_context"] == "La persona se llama Ana."
+    assert body["properties"]["max_call_duration"] == 300
+    assert body["properties"]["languages"] == ["es"]
+    assert "callback_url" not in body  # sin URL pública, la transcripción se consulta
+
+    await tavus.provider().create_conversation(
+        request(callback_url="https://api/x", audio_only=True)
+    )
+    body = tavus.calls[-1][2]
+    assert body is not None and body["callback_url"] == "https://api/x" and body["audio_only"]
+
+
+@pytest.mark.parametrize(
+    ("status", "code", "retryable"),
+    [
+        (402, "no_credits", False),
+        (401, "auth", False),
+        (429, "busy", True),
+        (503, "unavailable", True),
+    ],
+)
+async def test_errors_become_stable_codes(status: int, code: str, retryable: bool) -> None:
+    tavus = FakeTavus()
+    tavus.conversation_status = status
+    with pytest.raises(ProviderError) as info:
+        await tavus.provider().create_conversation(request())
+    assert info.value.code == code and info.value.retryable is retryable
+
+
+async def test_unpublished_scenario_never_calls_tavus() -> None:
+    tavus = FakeTavus()
+    with pytest.raises(ProviderError) as info:
+        await tavus.provider().create_conversation(request(pal_id=None))
+    assert info.value.code == "not_published" and tavus.calls == []
+
+
+async def test_probe_is_free_and_leaves_nothing_behind() -> None:
+    tavus = FakeTavus()
+    assert await tavus.provider().probe("p1") is None
+    method, path, body = tavus.calls[0]
+    assert (method, path) == ("POST", "/v2/conversations")
+    assert body is not None and body["test_mode"] is True and body["pal_id"] == "p1"
+    assert tavus.calls[-1][:2] == ("DELETE", "/v2/conversations/c123")  # se borra la de prueba
+
+    tavus = FakeTavus()
+    tavus.conversation_status = 402
+    assert await tavus.provider().probe("p1") == "no_credits"
+    assert [c[:2] for c in tavus.calls] == [("POST", "/v2/conversations")]
+    assert await FakeTavus().provider().probe() == "not_published"  # la cuenta no tiene PAL propios
+
+
+async def test_transcript_is_read_from_the_verbose_conversation() -> None:
+    transcript = await FakeTavus().provider().fetch_transcript("c123")
+    assert transcript.ready and transcript.ended
+    assert [(t.role, t.text) for t in transcript.turns] == [
+        ("doctor", "Tengo tres minutos."),
+        ("rep", "Doctor, ¿cómo define hoy qué IBP usar?"),
+    ]
+    assert transcript.turns[1].t == 4.5
+    pending = transcript_from_conversation({"status": "active", "events": []})
+    assert not pending.ready and not pending.ended
+
+
+async def test_shared_account_pals_from_other_projects_are_never_touched() -> None:
+    tavus = FakeTavus()
+    provider = tavus.provider()
+    with pytest.raises(ProviderError):
+        await provider.create_pal({"pal_name": "Otro proyecto"})
+    with pytest.raises(ProviderError):
+        await provider.delete_pal("p_ajeno")
+    assert "p_ajeno" in tavus.pals
+    own = await provider.create_pal({"pal_name": f"{PAL_PREFIX} · prueba"})
+    assert await provider.delete_pal(own) is True
+
+
+def test_pal_payload_uses_the_elevenlabs_voice_and_the_compiled_prompt() -> None:
+    catalog = load_catalog()
+    scenario = catalog.get("internista_exigente")
+    assert scenario is not None
+    settings = Settings(env="test", database_url="sqlite+aiosqlite:///:memory:")
+    payload = pal.build_pal(catalog, scenario, settings, 3)
+    digest = catalog.content_hash(scenario)[:8]
+    assert payload["pal_name"] == f"{PAL_PREFIX} · ESOMED · Dra. Carolina Peña · v3 · {digest}"
+    assert payload["default_face_id"] == scenario.casting.face_id
+    assert payload["languages"] == ["es"]
+    tts = payload["layers"]["tts"]
+    assert tts["tts_engine"] == "elevenlabs"
+    assert tts["external_voice_id"] == scenario.casting.voice_id
+    assert tts["tts_model_name"] == "eleven_turbo_v2_5"
+    assert "api_key" not in tts  # voz pública: no se entrega la llave de ElevenLabs
+    assert payload["layers"]["perception"]["perception_model"] == "off"
+    assert payload["layers"]["llm"]["model"] == "tavus-gemma-4"
+    flow = payload["layers"]["conversational_flow"]
+    assert (flow["turn_taking_patience"], flow["pal_interruptibility"]) == ("medium", "low")
+    assert "Dra. Carolina Peña" in payload["system_prompt"]
+
+    with_key = Settings(
+        env="test", database_url="sqlite+aiosqlite:///:memory:", training_tts_api_key="sk_x"
+    )
+    assert pal.build_pal(catalog, scenario, with_key, 1)["layers"]["tts"]["api_key"] == "sk_x"
+
+
+async def test_apply_publishes_once_and_is_idempotent(make_env) -> None:  # type: ignore[no-untyped-def]
+    tavus = FakeTavus()
+    async with make_env(conversation_provider=tavus.provider()) as env:
+        env: Env
+        first = await pal.apply(env.ctx, say=lambda _: None)
+        assert all(v.startswith("publicado v1") for v in first.values()), first
+        second = await pal.apply(env.ctx, say=lambda _: None)
+        assert all(v.startswith("igual") for v in second.values()), second
+        created = [c for c in tavus.calls if c[:2] == ("POST", "/v2/pals")]
+        assert len(created) == 4  # uno por escenario, una sola vez
+        async with env.ctx.sessionmaker() as session:
+            versions = (await session.execute(select(TrainingScenarioVersion))).scalars().all()
+        assert {v.scenario_slug for v in versions} == {s.slug for s in load_catalog().scenarios}
+        assert all(v.tavus_pal_id and v.retired_at is None for v in versions)
+        assert "p_ajeno" in tavus.pals
+
+    # Otra base de datos publica el mismo contenido: reutiliza los PAL, no crea duplicados.
+    async with make_env(conversation_provider=tavus.provider()) as other:
+        again = await pal.apply(other.ctx, say=lambda _: None)
+        assert all(v.startswith("reutilizado v1") for v in again.values()), again
+        assert len([c for c in tavus.calls if c[:2] == ("POST", "/v2/pals")]) == 4
