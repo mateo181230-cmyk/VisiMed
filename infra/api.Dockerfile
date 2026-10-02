@@ -10,7 +10,8 @@ COPY services/api/pyproject.toml services/api/README.md ./
 COPY services/api/src ./src
 COPY services/api/migrations ./migrations
 COPY services/api/alembic.ini ./alembic.ini
-RUN pip install .
+COPY infra/api-requirements.txt ./requirements.txt
+RUN pip install -r requirements.txt && pip install --no-deps .
 
 # Usuario sin privilegios
 RUN useradd --system --uid 10001 uno

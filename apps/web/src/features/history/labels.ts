@@ -42,6 +42,7 @@ export const CALL_FAILURE_LABEL: Record<string, string> = {
 export type EditorSpec =
   | { kind: 'scale' }
   | { kind: 'bool' }
+  | { kind: 'date' }
   | { kind: 'choice'; options: ReadonlyArray<readonly [string, string]> }
   | { kind: 'text'; max: number; multiline?: boolean }
 
@@ -58,26 +59,113 @@ const choices = (labels: Record<string, string>, skip: string[] = []): ReadonlyA
 
 /** Las filas de la ficha, en el orden en que se leen. */
 export const FIELD_DEFS: readonly FieldDef[] = [
+  {
+    key: 'products_discussed',
+    label: 'Producto / línea',
+    editor: { kind: 'text', max: 160 },
+  },
+  {
+    key: 'visit_objective',
+    label: 'Objetivo',
+    editor: { kind: 'text', max: 300, multiline: true },
+  },
+  {
+    key: 'discussion',
+    label: 'Conversación',
+    editor: { kind: 'text', max: 1000, multiline: true },
+  },
+  {
+    key: 'doctor_interest',
+    label: 'Le interesó',
+    editor: { kind: 'text', max: 500, multiline: true },
+  },
+  {
+    key: 'doctor_disinterest',
+    label: 'No le interesó',
+    editor: { kind: 'text', max: 500, multiline: true },
+  },
+  {
+    key: 'receptiveness_score',
+    label: 'Receptividad',
+    editor: { kind: 'scale' },
+  },
+  {
+    key: 'doctor_reaction',
+    label: 'Reacción',
+    editor: { kind: 'text', max: 500, multiline: true },
+  },
   { key: 'interest_level', label: 'Interés', editor: { kind: 'scale' } },
-  { key: 'visit_outcome', label: 'Resultado', editor: { kind: 'choice', options: choices(OUTCOME_LABEL) } },
+  {
+    key: 'visit_outcome',
+    label: 'Resultado',
+    editor: { kind: 'choice', options: choices(OUTCOME_LABEL) },
+  },
   { key: 'order_taken', label: '¿Hubo pedido?', editor: { kind: 'bool' } },
   {
     key: 'no_order_reason',
     label: 'Si no, ¿por qué?',
-    editor: { kind: 'choice', options: choices(REASON_LABEL, ['not_applicable']) },
+    editor: {
+      kind: 'choice',
+      options: choices(REASON_LABEL, ['not_applicable']),
+    },
     when: (r) => r.fields.order_taken?.value !== true,
   },
-  { key: 'objection', label: 'Objeción', editor: { kind: 'text', max: 140 } },
-  { key: 'competitor', label: 'Competencia', editor: { kind: 'text', max: 80 } },
-  { key: 'commitment', label: 'Compromiso', editor: { kind: 'text', max: 140 } },
-  { key: 'next_action', label: 'Próximo paso', editor: { kind: 'text', max: 140 } },
-  { key: 'territory_signal', label: 'Territorio', editor: { kind: 'text', max: 200, multiline: true } },
+  {
+    key: 'objection',
+    label: 'Objeciones / preguntas',
+    editor: { kind: 'text', max: 500, multiline: true },
+  },
+  {
+    key: 'new_information',
+    label: 'Información nueva',
+    editor: { kind: 'text', max: 700, multiline: true },
+  },
+  {
+    key: 'competitor',
+    label: 'Competencia',
+    editor: { kind: 'text', max: 80 },
+  },
+  {
+    key: 'current_preference',
+    label: 'Preferencia actual',
+    editor: { kind: 'text', max: 120 },
+  },
+  {
+    key: 'commitment',
+    label: 'Compromisos',
+    editor: { kind: 'text', max: 500, multiline: true },
+  },
+  {
+    key: 'next_action',
+    label: 'Próximo paso',
+    editor: { kind: 'text', max: 300 },
+  },
+  {
+    key: 'next_action_date',
+    label: 'Fecha de seguimiento',
+    editor: { kind: 'date' },
+  },
+  {
+    key: 'samples_delivered',
+    label: 'Entregó muestras',
+    editor: { kind: 'bool' },
+  },
+  {
+    key: 'territory_signal',
+    label: 'Territorio',
+    editor: { kind: 'text', max: 200, multiline: true },
+  },
+  {
+    key: 'free_note',
+    label: 'Nota libre',
+    editor: { kind: 'text', max: 700, multiline: true },
+  },
 ]
 
 export const SUMMARY_DEF: FieldDef = {
   key: 'summary',
   label: 'Resumen',
-  editor: { kind: 'text', max: 280, multiline: true },
+  editor: { kind: 'text', max: 800, multiline: true },
 }
 
 export function fieldValue(report: ReportRow, key: string): ReportValue {
@@ -89,11 +177,15 @@ export function displayValue(key: string, value: ReportValue): string | null {
   if (value === null || value === '') return null
   switch (key) {
     case 'interest_level':
+    case 'receptiveness_score':
       return `${value} de 5`
     case 'visit_outcome':
       return OUTCOME_LABEL[String(value)] ?? String(value)
     case 'order_taken':
+    case 'samples_delivered':
       return value === true ? 'Sí' : 'No'
+    case 'next_action_date':
+      return typeof value === 'string' ? formatLongDate(value) : null
     case 'no_order_reason':
       return REASON_LABEL[String(value)] ?? String(value)
     default:

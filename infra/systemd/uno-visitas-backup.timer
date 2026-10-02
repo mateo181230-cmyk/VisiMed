@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup diario de UNO Visitas
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 UTC
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

@@ -88,10 +88,15 @@ async def update_prefs(
     push_enabled: bool | None = None,
     email_enabled: bool | None = None,
     remind_before_min: int | None = None,
+    call_remind_before_min: int | None = None,
     digest_enabled: bool | None = None,
     digest_time: str | None = None,
 ) -> NotificationPreference:
     prefs = await get_prefs(session, user_id, now)
+    if call_remind_before_min is not None:
+        if call_remind_before_min not in REMIND_OPTIONS:
+            raise ApiError(422, "invalid_reminder", "Elige un tiempo de llamada de la lista")
+        prefs.call_remind_before_min = call_remind_before_min
     if remind_before_min is not None:
         if remind_before_min not in REMIND_OPTIONS:
             raise ApiError(422, "invalid_reminder", "Elige un tiempo de aviso de la lista")

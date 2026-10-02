@@ -1,0 +1,8 @@
+[Unit]
+Description=Backup de PostgreSQL de UNO Visitas
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /opt/uno-visitas/current/infra/backup.sh

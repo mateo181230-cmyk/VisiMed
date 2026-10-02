@@ -1,4 +1,4 @@
-﻿{
+{
   "components": {
     "schemas": {
       "ApprovalOut": {
@@ -838,7 +838,7 @@
         "type": "object"
       },
       "GeoOut": {
-        "description": "Resultado de geocerca de un momento («Llegué» o «Terminé»). Sin coordenadas: el teléfono\nya las tiene y no hace falta devolverlas.",
+        "description": "Resultado de geocerca de un momento (�Llegu� o �Termin�). Sin coordenadas: el tel�fono\nya las tiene y no hace falta devolverlas.",
         "properties": {
           "distance_m": {
             "anyOf": [
@@ -1172,8 +1172,311 @@
         "title": "OverviewOut",
         "type": "object"
       },
+      "PilotDoctor": {
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "default_line_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Line Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "institution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "representative_id": {
+            "format": "uuid",
+            "title": "Representative Id",
+            "type": "string"
+          },
+          "review_state": {
+            "title": "Review State",
+            "type": "string"
+          },
+          "specialty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialty"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "specialty",
+          "institution",
+          "address",
+          "zone",
+          "representative_id",
+          "default_line_id",
+          "review_state"
+        ],
+        "title": "PilotDoctor",
+        "type": "object"
+      },
+      "PilotRepresentative": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PilotRepresentative",
+        "type": "object"
+      },
+      "PilotSnapshot": {
+        "properties": {
+          "doctors": {
+            "items": {
+              "$ref": "#/components/schemas/PilotDoctor"
+            },
+            "title": "Doctors",
+            "type": "array"
+          },
+          "esomed_connected": {
+            "default": false,
+            "title": "Esomed Connected",
+            "type": "boolean"
+          },
+          "history_since": {
+            "format": "date-time",
+            "title": "History Since",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "now": {
+            "format": "date-time",
+            "title": "Now",
+            "type": "string"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/ReportOut"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
+          "representatives": {
+            "items": {
+              "$ref": "#/components/schemas/PilotRepresentative"
+            },
+            "title": "Representatives",
+            "type": "array"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "visits": {
+            "items": {
+              "$ref": "#/components/schemas/PilotVisit"
+            },
+            "title": "Visits",
+            "type": "array"
+          }
+        },
+        "required": [
+          "now",
+          "timezone",
+          "history_since",
+          "representatives",
+          "doctors",
+          "lines",
+          "visits",
+          "reports"
+        ],
+        "title": "PilotSnapshot",
+        "type": "object"
+      },
+      "PilotVisit": {
+        "properties": {
+          "arrival_geo_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Geo State"
+          },
+          "arrived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrived At"
+          },
+          "discussed_line_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Discussed Line Ids",
+            "type": "array"
+          },
+          "doctor_id": {
+            "format": "uuid",
+            "title": "Doctor Id",
+            "type": "string"
+          },
+          "finish_geo_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finish Geo State"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "primary_line_id": {
+            "format": "uuid",
+            "title": "Primary Line Id",
+            "type": "string"
+          },
+          "representative_id": {
+            "format": "uuid",
+            "title": "Representative Id",
+            "type": "string"
+          },
+          "scheduled_at": {
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "doctor_id",
+          "representative_id",
+          "primary_line_id",
+          "scheduled_at",
+          "status",
+          "arrived_at",
+          "finished_at",
+          "arrival_geo_state",
+          "finish_geo_state"
+        ],
+        "title": "PilotVisit",
+        "type": "object"
+      },
       "PreferencesIn": {
         "properties": {
+          "call_remind_before_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Remind Before Min"
+          },
           "digest_enabled": {
             "anyOf": [
               {
@@ -1236,6 +1539,16 @@
       },
       "PreferencesOut": {
         "properties": {
+          "call_delivery_available": {
+            "default": false,
+            "title": "Call Delivery Available",
+            "type": "boolean"
+          },
+          "call_remind_before_min": {
+            "default": 5,
+            "title": "Call Remind Before Min",
+            "type": "integer"
+          },
           "digest_enabled": {
             "title": "Digest Enabled",
             "type": "boolean"
@@ -1254,6 +1567,10 @@
               }
             ],
             "title": "Email"
+          },
+          "email_delivery_available": {
+            "title": "Email Delivery Available",
+            "type": "boolean"
           },
           "email_enabled": {
             "title": "Email Enabled",
@@ -1276,6 +1593,10 @@
           },
           "push_available": {
             "title": "Push Available",
+            "type": "boolean"
+          },
+          "push_delivery_available": {
+            "title": "Push Delivery Available",
             "type": "boolean"
           },
           "push_enabled": {
@@ -1311,7 +1632,9 @@
         },
         "required": [
           "push_enabled",
+          "push_delivery_available",
           "email_enabled",
+          "email_delivery_available",
           "email",
           "email_verified",
           "pending_email",
@@ -1691,6 +2014,49 @@
         "title": "QuizScore",
         "type": "object"
       },
+      "RegisterIn": {
+        "properties": {
+          "email": {
+            "maxLength": 254,
+            "minLength": 5,
+            "title": "Email",
+            "type": "string"
+          },
+          "full_name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Full Name",
+            "type": "string"
+          },
+          "invite_code": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Invite Code",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 25,
+            "minLength": 8,
+            "title": "Phone",
+            "type": "string"
+          },
+          "pin": {
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Pin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "full_name",
+          "phone",
+          "email",
+          "pin",
+          "invite_code"
+        ],
+        "title": "RegisterIn",
+        "type": "object"
+      },
       "ReportFieldOut": {
         "properties": {
           "confidence": {
@@ -1728,7 +2094,7 @@
         "type": "object"
       },
       "ReportOut": {
-        "description": "La ficha de una visita: lo que contó el visitador en la llamada, con su confianza.",
+        "description": "La ficha de una visita: lo que cont� el visitador en la llamada, con su confianza.",
         "properties": {
           "complete": {
             "title": "Complete",
@@ -2682,6 +3048,53 @@
             "title": "Primary Line Id",
             "type": "string"
           },
+          "report_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Due At"
+          },
+          "report_invalid_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Invalid At"
+          },
+          "report_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Mode"
+          },
+          "report_notified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Notified At"
+          },
           "scheduled_at": {
             "format": "date-time",
             "title": "Scheduled At",
@@ -2690,6 +3103,17 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           },
           "updated_at": {
             "format": "date-time",
@@ -2732,7 +3156,7 @@
   "paths": {
     "/salud": {
       "get": {
-        "description": "Estado del sistema, sin datos personales (doc 01 §17).",
+        "description": "Estado del sistema, sin datos personales (doc 01 �17).",
         "operationId": "health_salud_get",
         "responses": {
           "200": {
@@ -2948,6 +3372,97 @@
         "summary": "Refresh",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "operationId": "register_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/intelligence/snapshot": {
+      "get": {
+        "operationId": "snapshot_v1_intelligence_snapshot_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "history_days",
+            "required": false,
+            "schema": {
+              "default": 365,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "History Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Snapshot",
+        "tags": [
+          "intelligence"
         ]
       }
     },

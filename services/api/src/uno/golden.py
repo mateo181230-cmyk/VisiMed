@@ -18,7 +18,7 @@ from typing import Any
 from uno import clock
 from uno.elevenlabs_setup import DEFAULT_CONFIG_DIR, ElevenLabsAdmin, ElevenLabsError
 from uno.modules.calls.context import VisitBrief, build_dynamic_variables
-from uno.modules.calls.provider import clean_utterance
+from uno.modules.calls.provider import ConversationResult, Turn, clean_utterance
 from uno.modules.calls.schema import (
     ParsedVisit,
     callback_minutes,
@@ -95,6 +95,10 @@ def _lookup(
     index, name = int(m.group(1)), m.group(2)
     if index > len(visits):
         return None
+    if name == "report_confirmed":
+        return visits[index - 1].confirmed
+    if name == "complete":
+        return visits[index - 1].complete
     value = visits[index - 1].fields.get(name)
     return value.value if value else None
 
@@ -108,11 +112,9 @@ def evaluate(
     for key, expected in scenario.get("expect", {}).items():
         got = _lookup(result.visits, result.complete, key, raw_results)
         result.checks.append(Check(key, expected, got, _matches(expected, got)))
-    summaries = " ".join(
-        str(v.fields["summary"].value) for v in result.visits if "summary" in v.fields
-    )
-    lowered = summaries.lower()
-    result.leaked = [w for w in scenario.get("forbidden_in_summary", []) if w.lower() in lowered]
+    content = " ".join(str(f.value) for v in result.visits for f in v.fields.values()).lower()
+    forbidden = scenario.get("forbidden_in_report", scenario.get("forbidden_in_summary", []))
+    result.leaked = [w for w in forbidden if w.lower() in content]
     return result
 
 
@@ -143,6 +145,17 @@ def run_scenario(
         for turn in response.get("simulated_conversation", [])
         if turn.get("message")
     ]
+    if "readback_confirmed" in scenario:
+        conversation = ConversationResult(
+            conversation_id="simulation",
+            status="done",
+            turns=[
+                Turn("agent" if role == "UNO" else "user", text) for role, text in result.transcript
+            ],
+        )
+        got = conversation.has_confirmed_readbacks(len(scenario["visits"]))
+        expected = scenario["readback_confirmed"]
+        result.checks.append(Check("readback_confirmed", expected, got, expected is got))
     return result
 
 

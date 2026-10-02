@@ -34,9 +34,7 @@ SIGNATURE_TOLERANCE_S = 30 * 60
 
 def sign(secret: str, body: bytes, timestamp: int) -> str:
     """Cabecera ``ElevenLabs-Signature`` para ``body`` (la usan las pruebas y el simulador)."""
-    digest = hmac.new(
-        secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256
-    ).hexdigest()
+    digest = hmac.new(secret.encode(), f"{timestamp}.".encode() + body, hashlib.sha256).hexdigest()
     return f"t={timestamp},v0={digest}"
 
 
@@ -73,7 +71,7 @@ async def elevenlabs_webhook(
         raise HTTPException(status_code=400, detail="Cuerpo inválido") from None
     kind = payload.get("type")
     data = payload.get("data") or {}
-    client_data = (data.get("conversation_initiation_client_data") or {})
+    client_data = data.get("conversation_initiation_client_data") or {}
     user_id = data.get("user_id") or client_data.get("user_id")
     conversation_id = data.get("conversation_id")
 

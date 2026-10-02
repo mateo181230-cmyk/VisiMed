@@ -2,12 +2,11 @@ import { Bell, ClipboardCheck, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ScreenHeader } from '../../components/ScreenHeader'
+import { ProfileLink } from '../../components/ProfileLink'
 import { SyncPill } from '../../components/SyncPill'
 import { Button, Card, SectionTitle, Skeleton } from '../../components/ui'
-import { initials } from '../../lib/text'
 import { formatLongDate, todayKey } from '../../lib/time'
 import { useNow } from '../../lib/useNow'
-import { useAuth } from '../auth/AuthProvider'
 import { useToConfirmCount } from '../history/useHistory'
 import { VisitActions } from '../visit/VisitActions'
 import { ScheduleSheet } from './ScheduleSheet'
@@ -20,7 +19,6 @@ const NOW_WINDOW_MS = 30 * 60 * 1000
 
 /** Hoy (doc 01 §8.3, S3): la visita actual siempre al frente, y lo que sigue. */
 export function TodayScreen() {
-  const { user } = useAuth()
   const agenda = useAgenda()
   const now = useNow()
   const toConfirm = useToConfirmCount()
@@ -69,13 +67,7 @@ export function TodayScreen() {
             >
               <Bell size={24} />
             </Link>
-            <Link
-              to="/mas"
-              aria-label="Mi cuenta"
-              className="grid size-11 place-items-center rounded-full bg-brand-100 text-[15px] font-bold text-brand"
-            >
-              {initials(user?.full_name ?? '')}
-            </Link>
+            <ProfileLink />
           </>
         }
       />
@@ -120,7 +112,7 @@ export function TodayScreen() {
               >
                 <ClipboardCheck size={24} className="shrink-0 text-brand" aria-hidden />
                 <span className="flex-1 font-semibold">
-                  {toConfirm === 1 ? '1 resumen por confirmar' : `${toConfirm} resúmenes por confirmar`}
+                  {toConfirm === 1 ? '1 resumen pendiente' : `${toConfirm} resúmenes pendientes`}
                 </span>
                 <span className="font-bold text-brand">Ver</span>
               </Link>

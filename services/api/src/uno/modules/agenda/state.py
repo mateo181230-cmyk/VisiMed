@@ -19,6 +19,7 @@ from uno.db import current_change_seq
 from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import User
 from uno.modules.calls.models import Call, CallVisit, VisitReport
+from uno.modules.calls.schema import missing_report_fields
 from uno.modules.catalog.models import Doctor, Institution, Panel, Product, ProductLine
 from uno.modules.notifications.models import REMIND_OPTIONS
 
@@ -78,6 +79,7 @@ class CallInfoOut(BaseModel):
 
 
 class VisitOut(BaseModel):
+    title: str | None = None
     id: uuid.UUID
     doctor_id: uuid.UUID
     institution_id: uuid.UUID | None
@@ -89,6 +91,10 @@ class VisitOut(BaseModel):
     not_done_reason: str | None
     arrived_at: datetime | None
     finished_at: datetime | None
+    report_notified_at: datetime | None = None
+    report_due_at: datetime | None = None
+    report_invalid_at: datetime | None = None
+    report_mode: str | None = None
     arrival_geo: GeoOut | None  # None mientras no haya «Llegué»
     finish_geo: GeoOut | None  # None mientras no haya «Terminé»
     updated_at: datetime
@@ -235,7 +241,11 @@ async def build_state(
                     Call.failure_reason,
                 )
                 .join(Call, Call.id == CallVisit.call_id)
-                .where(CallVisit.visit_id.in_([v.id for v in visits]), CallVisit.live.is_(True))
+                .where(
+                    CallVisit.visit_id.in_([v.id for v in visits]),
+                    CallVisit.live.is_(True),
+                    Call.purpose != "reminder",
+                )
             )
         ).all()
         for visit_id, status, attempt, scheduled_for, reason in rows:
@@ -281,6 +291,7 @@ async def build_state(
         doctors=doctors,
         visits=[
             VisitOut(
+                title=v.title,
                 id=v.id,
                 doctor_id=v.doctor_id,
                 institution_id=v.institution_id,
@@ -292,6 +303,10 @@ async def build_state(
                 not_done_reason=v.not_done_reason,
                 arrived_at=v.arrived_at,
                 finished_at=v.finished_at,
+                report_notified_at=v.report_notified_at,
+                report_due_at=v.report_due_at,
+                report_invalid_at=v.report_invalid_at,
+                report_mode=v.report_mode,
                 arrival_geo=_geo_out(
                     v.arrival_geo_state, v.arrival_distance_m, v.arrival_precision_m
                 ),
@@ -305,7 +320,7 @@ async def build_state(
             ReportOut(
                 visit_id=r.visit_id,
                 status=r.status,
-                complete=r.complete,
+                complete=not missing_report_fields(r.fields or {}),
                 fields={
                     name: ReportFieldOut(**entry)
                     for name, entry in (r.fields or {}).items()

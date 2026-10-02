@@ -7,6 +7,7 @@ import { Button, Card, Notice, SectionTitle, Skeleton } from '../../components/u
 import { DEFAULT_TZ } from '../../lib/time'
 import { useAuth } from '../auth/AuthProvider'
 import { ConsentSheet } from './ConsentSheet'
+import { discardPreparedCall, preloadDailyClient, prepareDailyCall } from './dailyClient'
 import { QuizSheet } from './QuizSheet'
 import { BAND_TONE, TONE_CLASS, doctorNotice, faceUrl, formatDateTime, progressPill, trainingError } from './labels'
 import { checkMicrophone, micHelp } from './microphone'
@@ -58,7 +59,7 @@ export function ScenarioScreen() {
   const [quizOpen, setQuizOpen] = useState(false)
   const [consentOpen, setConsentOpen] = useState(false)
   const [audioOnly, setAudioOnly] = useState(false)
-  const [starting, setStarting] = useState(false)
+  const [startPhase, setStartPhase] = useState<'microphone' | 'connection' | 'doctor' | null>(null)
   const [startProblem, setStartProblem] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -72,6 +73,12 @@ export function ScenarioScreen() {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (data?.doctor.mode === 'tavus' && data.doctor.status === 'available') {
+      void preloadDailyClient().catch(() => {})
+    }
+  }, [data?.doctor.mode, data?.doctor.status])
+
   async function startVisit(consented = false) {
     if (!data) return
     setStartProblem(null)
@@ -79,18 +86,28 @@ export function ScenarioScreen() {
       setConsentOpen(true)
       return
     }
-    setStarting(true)
+    setStartPhase('microphone')
     if (data.doctor.mode !== 'fake') {
       const mic = await checkMicrophone()
       if (mic !== 'ok') {
-        setStarting(false)
+        setStartPhase(null)
         setStartProblem(micHelp(mic))
         return
       }
+      setStartPhase('connection')
+      try {
+        await prepareDailyCall()
+      } catch (error) {
+        setStartPhase(null)
+        setStartProblem(error instanceof Error ? error.message : 'No pudimos cargar la videollamada.')
+        return
+      }
     }
+    setStartPhase('doctor')
     const res = await training.start(data.slug, audioOnly)
-    setStarting(false)
+    setStartPhase(null)
     if (!res.ok) {
+      await discardPreparedCall()
       if ((res.kind === 'client' || res.kind === 'server') && res.code === 'attempt_active') {
         setStartProblem('Ya tienes una visita de práctica en curso. Termínala antes de empezar otra.')
       } else {
@@ -258,10 +275,10 @@ export function ScenarioScreen() {
             block
             size="lg"
             icon={<Mic size={22} />}
-            disabled={!canStart || starting}
+            disabled={!canStart || startPhase !== null}
             onClick={() => void startVisit()}
           >
-            {starting ? 'Preparando al médico…' : 'Empezar visita'}
+            {startPhase === 'microphone' ? 'Comprobando micrófono…' : startPhase === 'connection' ? 'Conectando la videollamada…' : startPhase === 'doctor' ? 'Abriendo la visita…' : 'Empezar visita'}
           </Button>
         </Card>
       </section>

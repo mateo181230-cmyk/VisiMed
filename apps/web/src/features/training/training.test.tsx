@@ -15,6 +15,10 @@ import { ResultScreen } from './ResultScreen'
 import { ScenarioScreen } from './ScenarioScreen'
 import { TrainingHome } from './TrainingHome'
 
+const connection = vi.hoisted(() => ({ prepareDailyCall: vi.fn(), discardPreparedCall: vi.fn(), preloadDailyClient: vi.fn() }))
+vi.mock('./dailyClient', () => ({ ...connection, acquireDailyCall: vi.fn(), releaseDailyCall: vi.fn() }))
+vi.mock('./microphone', () => ({ checkMicrophone: vi.fn(async () => 'ok'), micHelp: vi.fn() }))
+
 const api = vi.hoisted(() => ({
   overview: vi.fn<() => Promise<ApiResult<TrainingOverview>>>(),
   scenario: vi.fn<(slug: string) => Promise<ApiResult<TrainingScenario>>>(),
@@ -194,6 +198,7 @@ function renderAt(path: string) {
 
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset())
+  Object.values(connection).forEach((fn) => fn.mockReset().mockResolvedValue(undefined))
 })
 
 describe('Entrenar · inicio', () => {
@@ -217,6 +222,17 @@ describe('Entrenar · inicio', () => {
 })
 
 describe('Entrenar · escenario', () => {
+  it('no abre una conversación de pago si la videollamada no puede cargar', async () => {
+    const doctor = { ...fakeDoctor, mode: 'tavus' as const }
+    api.scenario.mockResolvedValue(ok(scenario(doctor, true)))
+    connection.prepareDailyCall.mockRejectedValue(new Error('No pudimos cargar la videollamada.'))
+    const user = renderAt('/entrenar/medico_general_indiferenciado')
+    await user.click(await screen.findByRole('button', { name: 'Empezar visita' }))
+    expect(await screen.findByText('No pudimos cargar la videollamada.')).toBeInTheDocument()
+    expect(api.start).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Empezar visita' })).toBeEnabled()
+  })
+
   it('el formulario se revisa con la explicación y la visita queda desactivada si el médico no está', async () => {
     api.scenario.mockResolvedValue(ok(scenario()))
     api.submitQuiz.mockResolvedValue(

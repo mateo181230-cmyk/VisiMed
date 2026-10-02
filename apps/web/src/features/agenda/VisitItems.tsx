@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { Card } from '../../components/ui'
 import { formatTime } from '../../lib/time'
 import { NOT_DONE_LABEL, type VisitVM } from './useAgenda'
+import { PreviousVisitReminder } from './PreviousVisitReminder'
 
 const subtitle = (vm: VisitVM): string =>
   [vm.institution?.name, vm.doctor?.specialty].filter(Boolean).join(' · ') || 'Sin institución'
@@ -55,6 +56,7 @@ export function NextVisitCard({
   const { visit, doctor, institution } = vm
   return (
     <Card className="p-5">
+      <PreviousVisitReminder vm={vm} />
       <div className="flex items-center justify-between">
         <span className="inline-flex items-center gap-2 text-base font-bold">
           <span className="size-2.5 rounded-full bg-brand" aria-hidden />
@@ -68,7 +70,7 @@ export function NextVisitCard({
       <ul className="mt-4 space-y-2.5 text-base">
         <li className="flex items-center gap-3">
           <User size={20} className="shrink-0 text-muted" aria-hidden />
-          <span className="font-semibold">{doctor?.full_name ?? 'Médico'}</span>
+          <span className="font-semibold">{visit.title || doctor?.full_name || 'Médico'}</span>
         </li>
         {doctor?.specialty && (
           <li className="flex items-center gap-3">
@@ -136,7 +138,7 @@ export function VisitRowItem({
       />
       <span className="min-w-0 flex-1">
         <span className={clsx('block truncate font-semibold', tone === 'muted' && 'text-muted')}>
-          {doctor?.full_name ?? 'Médico'}
+          {visit.title || doctor?.full_name || 'Médico'}
         </span>
         <span className="block truncate text-sm text-muted">
           {visit.status === 'not_done'

@@ -16,6 +16,7 @@ from uno.modules.calls.context import (
     spoken_time,
 )
 from uno.modules.calls.schema import (
+    CORE_FIELDS,
     FIELD_BY_NAME,
     GLOBAL_FIELDS,
     VISIT_FIELDS,
@@ -42,7 +43,7 @@ def v(value: object) -> dict[str, object]:
 
 def test_data_collection_fits_the_elevenlabs_limit_and_uses_simple_types() -> None:
     items = data_collection_items()
-    assert len(items) == len(VISIT_FIELDS) + len(GLOBAL_FIELDS) <= 25  # tope por agente
+    assert len(items) == len(CORE_FIELDS) + 2 + len(GLOBAL_FIELDS) <= 25
     assert {i["type"] for i in items.values()} <= {"string", "integer", "boolean"}
     assert "v1_order_taken" in items and "extra_visits_json" in items
     assert items["v1_visit_outcome"]["enum"] == list(VISIT_OUTCOMES)
@@ -77,9 +78,22 @@ def full_results() -> dict[str, object]:
         "v1_receptiveness": v("high"),
         "v1_objection": v("  Dice que la   competencia le da mejor precio  "),
         "v1_competitor": v("Nexium"),
+        "v1_current_preference": v(""),
+        "v1_commitment": v("Enviar material solicitado"),
+        "v1_next_action": v("Enviar material y retomar sus preguntas"),
         "v1_next_action_in_days": v(14),
         "v1_samples_delivered": v(False),
         "v1_summary": v("Interés 4/5."),
+        "v1_products_discussed": v("ESOMED"),
+        "v1_details_json": v(
+            json.dumps(
+                {
+                    "visit_objective": "Explorar necesidades",
+                    "discussion": "Hablamos de ESOMED",
+                    "receptiveness_score": 4,
+                }
+            )
+        ),
         "extra_visits_json": v("[]"),
         "uncertain_fields": v(""),
         "interview_complete": v(True),
@@ -94,7 +108,7 @@ def test_parse_a_complete_visit() -> None:
     assert f["objection"].value == "Dice que la competencia le da mejor precio"  # espacios limpios
     assert f["order_taken"].value is False
     assert f["no_order_reason"].value == "competitor_better"
-    assert "competitor" in f and "commitment" not in f  # vacío = ausente, no cadena vacía
+    assert "competitor" in f and "current_preference" not in f  # vacío = ausente
     assert interview_complete(full_results())
 
 
@@ -137,8 +151,30 @@ def test_a_false_order_is_kept_because_no_order_is_information() -> None:
 
 def test_extra_visits_are_read_from_the_json_field() -> None:
     extras = [
-        {"ref": "V2", "interest_level": 5, "visit_outcome": "order_taken", "order_taken": True},
-        {"ref": "V3", "interest_level": 2, "visit_outcome": "rejected", "order_taken": False},
+        {
+            "ref": "V2",
+            "interest_level": 5,
+            "visit_outcome": "order_taken",
+            "order_taken": True,
+            "products_discussed": "ESOMED",
+            "visit_objective": "Presentar",
+            "discussion": "Pidió ESOMED",
+            "commitment": "Entregar el pedido",
+            "next_action": "Entregar el pedido",
+            "receptiveness_score": 5,
+        },
+        {
+            "ref": "V3",
+            "interest_level": 2,
+            "visit_outcome": "rejected",
+            "order_taken": False,
+            "products_discussed": "ESOMED",
+            "visit_objective": "Presentar",
+            "discussion": "No quiso hablar de ESOMED",
+            "commitment": "No quedaron compromisos",
+            "next_action": "No se acordó próximo paso",
+            "receptiveness_score": 2,
+        },
         {"ref": "V9", "interest_level": 1},  # referencia inexistente: se ignora
     ]
     data = full_results() | {"extra_visits_json": v(json.dumps(extras))}
@@ -161,7 +197,9 @@ def test_broken_extra_json_never_raises(bad: str) -> None:
 
 
 def test_extra_json_is_ignored_when_there_is_only_one_visit() -> None:
-    data = full_results() | {"extra_visits_json": v(json.dumps([{"ref": "V2", "interest_level": 5}]))}
+    data = full_results() | {
+        "extra_visits_json": v(json.dumps([{"ref": "V2", "interest_level": 5}]))
+    }
     assert len(parse_analysis(data, 1)) == 1
 
 
@@ -171,16 +209,17 @@ def test_a_bare_value_works_like_the_wrapped_one() -> None:
 
 
 def test_text_is_capped_and_null_words_are_empty() -> None:
-    long_text = "x" * 500
+    long_text = "x" * 1500
     (visit,) = parse_analysis(
         {"v1_summary": v(long_text), "v1_objection": v("ninguna"), "v1_competitor": v("null")}, 1
     )
-    assert len(visit.fields["summary"].value) == 280
+    assert len(visit.fields["summary"].value) == 800
     assert "objection" not in visit.fields and "competitor" not in visit.fields
 
 
 @pytest.mark.parametrize(
-    ("raw", "expected"), [(30, 30), ("45", 45), (2, 5), (999, 240), (0, None), ("", None), (None, None)]
+    ("raw", "expected"),
+    [(30, 30), ("45", 45), (2, 5), (999, 240), (0, None), ("", None), (None, None)],
 )
 def test_callback_minutes_are_bounded(raw: object, expected: int | None) -> None:
     assert callback_minutes({"callback_in_minutes": v(raw)}) == expected
@@ -237,15 +276,26 @@ def test_variables_do_not_leak_the_doctor_name_by_default() -> None:
         assert private not in text
     assert variables["visitador_nombre"] == "Ana"
     assert variables["num_visitas"] == "3"
-    assert "la de las 9:30 de la mañana en Clínica Central" in variables["pregunta_inicial"]
-    assert variables["visitas_texto"].splitlines()[2] == "3. La visita de las 7:05 de la noche (línea RESPI)."
+    assert "por escrito" in variables["pregunta_inicial"]
+    assert "la de las 9:30 de la mañana en Clínica Central" in variables["pregunta_relato"]
+    assert (
+        variables["visitas_texto"].splitlines()[2]
+        == "3. La visita de las 7:05 de la noche (línea RESPI)."
+    )
 
 
 def test_variables_can_name_the_doctor_when_allowed() -> None:
     one = build_dynamic_variables("Ana", briefs()[:1], tz_name="America/Bogota", include_names=True)
-    assert one["pregunta_inicial"] == "¿Cómo te fue con la doctora Laura Méndez?"
-    many = build_dynamic_variables("Ana", briefs()[1:], tz_name="America/Bogota", include_names=True)
-    assert many["pregunta_inicial"].startswith("Tengo 2 visitas tuyas por reportar. Empecemos con la del doctor Carlos Gómez")
+    assert (
+        one["pregunta_relato"]
+        == "Vi que terminaste tu visita con la doctora Laura Méndez. ¿Cómo te fue?"
+    )
+    many = build_dynamic_variables(
+        "Ana", briefs()[1:], tz_name="America/Bogota", include_names=True
+    )
+    assert many["pregunta_relato"].startswith(
+        "Tengo 2 visitas tuyas por reportar. Empecemos con la del doctor Carlos Gómez"
+    )
 
 
 def test_only_the_first_five_visits_are_described() -> None:
@@ -257,3 +307,15 @@ def test_only_the_first_five_visits_are_described() -> None:
 def test_a_call_needs_at_least_one_visit() -> None:
     with pytest.raises(ValueError):
         build_dynamic_variables("Ana", [], tz_name="America/Bogota", include_names=False)
+
+
+def test_prior_commitment_is_context_not_a_current_visit_result() -> None:
+    brief = VisitBrief(
+        "Dr. Carlos Gómez", "Clínica", "GASTRU", at(13),
+        previous_next_action="Llevar una mejor propuesta",
+        previous_visit_at=at(9),
+    )
+    variables = build_dynamic_variables("Ana", [brief], tz_name="America/Bogota", include_names=True)
+    assert "Recuerda el pendiente" in variables["pregunta_relato"]
+    assert "Llevar una mejor propuesta" in variables["pregunta_relato"]
+    assert "no evidencia de cumplimiento" in variables["visitas_texto"]

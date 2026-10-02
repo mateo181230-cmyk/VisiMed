@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { type TrainingOverview, training } from '../../api/client'
 import { ScreenHeader } from '../../components/ScreenHeader'
+import { ProfileLink } from '../../components/ProfileLink'
 import { Button, Card, Notice, SectionTitle, Skeleton } from '../../components/ui'
 import { TONE_CLASS, doctorNotice, faceUrl, progressPill, trainingError } from './labels'
 
@@ -38,7 +39,7 @@ export function TrainingHome() {
 
   return (
     <>
-      <ScreenHeader title="Entrenar" subtitle="Practica la visita de ESOMED con un médico virtual" />
+      <ScreenHeader title="Entrenar" subtitle="Practica la visita de ESOMED con un médico virtual" right={<ProfileLink />} />
       <div className="space-y-6 px-5 pb-6">
         {error ? (
           <Card className="space-y-4 p-6 text-center">

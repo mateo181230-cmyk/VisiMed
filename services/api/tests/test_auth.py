@@ -14,7 +14,53 @@ from .conftest import (
     rep_token,
 )
 
-WHITELIST_PATHS = {"/salud", "/v1/auth/login", "/v1/auth/refresh", "/v1/auth/logout"}
+WHITELIST_PATHS = {
+    "/salud",
+    "/v1/auth/login",
+    "/v1/auth/register",
+    "/v1/auth/refresh",
+    "/v1/auth/logout",
+}
+
+
+async def test_registration_requires_invite(make_env) -> None:
+    payload = {
+        "full_name": "Laura Piloto",
+        "phone": "+573109876543",
+        "email": "laura@example.com",
+        "pin": "123456",
+        "invite_code": "incorrecto",
+    }
+    async with make_env(pilot_invite_code="secreto-piloto") as env:
+        r = await env.client.post("/v1/auth/register", json=payload)
+        assert r.status_code == 403
+        r = await env.client.post(
+            "/v1/auth/register", json={**payload, "invite_code": "secreto-piloto"}
+        )
+        assert r.status_code == 201
+        assert r.json()["user"]["role"] == "rep"
+        assert r.json()["user"]["phone"] == "+573109876543"
+        prefs = await env.client.get(
+            "/v1/notifications/preferences",
+            headers=bearer(r.json()["access_token"]),
+        )
+        assert prefs.json()["email"] == "laura@example.com"
+        assert prefs.json()["email_verified"] is False
+        assert (
+            await env.client.post(
+                "/v1/auth/login", json={"phone": payload["phone"], "pin": payload["pin"]}
+            )
+        ).status_code == 200
+        repeated = await env.client.post(
+            "/v1/auth/register", json={**payload, "invite_code": "secreto-piloto"}
+        )
+        assert repeated.status_code == 409
+    async with make_env() as env:
+        assert (
+            await env.client.post(
+                "/v1/auth/register", json={**payload, "invite_code": "secreto-piloto"}
+            )
+        ).status_code == 403
 
 
 async def test_login_ok_sets_httponly_refresh_cookie(env: Env) -> None:

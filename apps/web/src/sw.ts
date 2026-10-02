@@ -15,6 +15,21 @@ declare const self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+// Una compilación para presentar puede reemplazar la caché anterior si solo hay pantallas
+// de presentación o consulta abiertas. No la adelanta en una visita ni al editar entrenamiento.
+// Las compilaciones normales conservan el botón «Actualizar» como única forma de activarla.
+self.addEventListener('install', (event) => {
+  if ((import.meta as ImportMeta & { env: { VITE_DEMO_PREVIEW?: string } }).env.VITE_DEMO_PREVIEW !== 'true') return
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const safe = windows.length > 0 && windows.every(client => {
+      const path = new URL(client.url).pathname
+      return path === '/login' || path === '/admin' || path === '/inteligencia' || path === '/inteligencia/resumen' || path.startsWith('/admin/training/demo') || path.startsWith('/inteligencia/demo')
+    })
+    if (safe) await self.skipWaiting()
+  })())
+})
+
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('/index.html'), {
     denylist: [/^\/v1\//, /^\/salud/],

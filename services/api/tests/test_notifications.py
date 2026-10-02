@@ -313,6 +313,21 @@ async def test_send_test_notification_on_both_channels(env: Env) -> None:
     assert r.json()["results"] == {"push": "sent"}
 
 
+async def test_test_notification_does_not_claim_local_files_reached_inbox(make_env) -> None:
+    async with make_env(email_backend="file", push_backend="log") as env:
+        token = await rep_token(env)
+        await verified_email(env, token)
+        env.email.sent.clear()
+        prefs = await env.client.get("/v1/notifications/preferences", headers=bearer(token))
+        assert prefs.json()["email_delivery_available"] is False
+        assert prefs.json()["push_delivery_available"] is False
+        r = await env.client.post(
+            "/v1/notifications/test", headers=bearer(token), json={"channel": "all"}
+        )
+        assert r.json()["results"] == {"push": "unavailable", "email": "unavailable"}
+        assert env.email.sent == [] and env.push.sent == []
+
+
 async def test_test_notification_is_skipped_without_subscription_or_email(env: Env) -> None:
     token = await rep_token(env)
     r = await env.client.post(

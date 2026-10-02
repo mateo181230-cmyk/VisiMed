@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from secrets import compare_digest
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
@@ -12,8 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uno import clock
 from uno.context import AppContext
 from uno.deps import get_ctx, get_current_user, get_session
+from uno.errors import ApiError
 from uno.modules.auth import service
 from uno.modules.auth.models import User
+from uno.modules.notifications import service as notifications
 
 router = APIRouter(tags=["auth"])
 
@@ -23,6 +26,14 @@ REFRESH_PATH = "/v1/auth"
 class LoginIn(BaseModel):
     phone: str = Field(min_length=8, max_length=25)
     pin: str = Field(min_length=6, max_length=6)
+
+
+class RegisterIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(min_length=8, max_length=25)
+    email: str = Field(min_length=5, max_length=254)
+    pin: str = Field(min_length=6, max_length=6)
+    invite_code: str = Field(min_length=1, max_length=128)
 
 
 class UserOut(BaseModel):
@@ -74,6 +85,52 @@ async def login(
     session: AsyncSession = Depends(get_session),
     ctx: AppContext = Depends(get_ctx),
 ) -> SessionOut:
+    result = await service.login(
+        session,
+        ctx.settings,
+        phone=body.phone,
+        pin=body.pin,
+        ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+        now=clock.now(),
+    )
+    _set_refresh_cookie(response, ctx, result.refresh_token)
+    return SessionOut(
+        access_token=result.access.token,
+        expires_at=result.access.expires_at,
+        user=UserOut.of(result.user),
+    )
+
+
+@router.post("/v1/auth/register", response_model=SessionOut, status_code=201)
+async def register(
+    body: RegisterIn,
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+    ctx: AppContext = Depends(get_ctx),
+) -> SessionOut:
+    code = ctx.settings.pilot_invite_code
+    if not code or not compare_digest(body.invite_code, code):
+        raise ApiError(403, "invalid_invite", "El código de invitación no es válido")
+    email = notifications.normalize_email(body.email)
+    name = body.full_name.strip()
+    if len(name) < 2:
+        raise ApiError(422, "invalid_name", "Escribe tu nombre")
+    user = await service.create_user(
+        session,
+        ctx.settings,
+        full_name=name,
+        phone=body.phone,
+        pin=body.pin,
+        role="rep",
+        now=clock.now(),
+    )
+    prefs = await notifications.get_prefs(session, user.id, clock.now())
+    prefs.email = email
+    prefs.email_enabled = False
+    prefs.email_verified_at = None
+    await session.commit()
     result = await service.login(
         session,
         ctx.settings,

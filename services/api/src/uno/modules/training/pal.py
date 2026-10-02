@@ -93,6 +93,7 @@ async def apply(
     outcome: dict[str, str] = {}
     now = clock.now()
     published = await provider.list_pals() if isinstance(provider, TavusProvider) else []
+    published_ids = {str(p.get("pal_id")) for p in published}
     async with ctx.sessionmaker() as session:
         for scenario in catalog.scenarios:
             digest = catalog.content_hash(scenario)
@@ -107,7 +108,13 @@ async def apply(
                     .limit(1)
                 )
             ).scalar_one_or_none()
-            if current and current.content_hash == digest and current.tavus_pal_id:
+            # Una clave nueva puede pertenecer a otra cuenta. La referencia local solo sirve
+            # si el PAL todavía existe en la cuenta con la que estamos publicando.
+            if (
+                current
+                and current.content_hash == digest
+                and current.tavus_pal_id in published_ids
+            ):
                 outcome[scenario.slug] = f"igual (v{current.version}, {current.tavus_pal_id})"
                 say(f"= {scenario.doctor.name:22} sin cambios · v{current.version}")
                 continue

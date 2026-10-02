@@ -2,7 +2,7 @@
 
 El resto del sistema solo conoce la interfaz ``VoiceProvider``. Hay dos implementaciones:
 
-- ``ElevenLabsProvider``: la real (agente de voz de ElevenLabs sobre la troncal SIP de Telyaco).
+- ``ElevenLabsProvider``: la real (agente de ElevenLabs sobre Twilio o una troncal SIP).
 - ``FakeProvider``: simula al proveedor con el mismo contrato, para desarrollar y probar el ciclo
   completo sin marcar a nadie ni gastar minutos.
 
@@ -12,7 +12,9 @@ estructura de conversación; ``parse_conversation`` la lee en un solo lugar.
 
 from __future__ import annotations
 
+import math
 import re
+import unicodedata
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -85,6 +87,67 @@ class ConversationResult:
             for turn in self.turns
             if turn.text.strip()
         ]
+
+    def has_confirmed_readbacks(self, visit_count: int) -> bool:
+        """Respaldo textual de la confirmación: nunca un sí a una pregunta comercial.
+
+        Para lotes solo autoconfirmamos si hay una lectura aceptada por cada visita.
+        Ante una corrección, la aceptación anterior queda invalidada hasta nueva lectura.
+        """
+        accepted = 0
+        awaiting = False
+        last_accepted = False
+        prompts = 0
+        for turn in self.turns:
+            text = "".join(
+                c
+                for c in unicodedata.normalize("NFD", turn.text.lower())
+                if unicodedata.category(c) != "Mn"
+            )
+            if turn.role == "agent":
+                if "resumen" in text and re.search(r"confirm|correct|esta bien|de acuerdo", text):
+                    prompts += 1
+                    awaiting = True
+                    last_accepted = False
+            elif awaiting and turn.text.strip():
+                awaiting = False
+                positive = bool(
+                    re.match(
+                        r"\s*(si\b|correcto\b|confirmo\b|exacto\b|asi es\b|tal cual\b|"
+                        r"esta bien\b|de acuerdo\b)",
+                        text,
+                    )
+                )
+                correction = bool(re.search(r"\b(no|pero|excepto|corrige|cambia|falta)\b", text))
+                last_accepted = positive and not correction
+                if last_accepted:
+                    accepted += 1
+        # En lotes ambiguos no atribuimos dos lecturas del mismo médico a dos visitas.
+        return (
+            last_accepted
+            and not awaiting
+            and (visit_count == 1 or accepted == prompts == visit_count)
+        )
+
+    def confirmed_readback_offset(self, visit_count: int) -> float | None:
+        """Tiempo de la última aceptación, para no penalizar un análisis tardío."""
+        if not self.has_confirmed_readbacks(visit_count):
+            return None
+        awaiting = False
+        offset = None
+        for turn in self.turns:
+            text = "".join(
+                c
+                for c in unicodedata.normalize("NFD", turn.text.lower())
+                if unicodedata.category(c) != "Mn"
+            )
+            if turn.role == "agent":
+                if "resumen" in text and re.search(r"confirm|correct|esta bien|de acuerdo", text):
+                    awaiting = True
+            elif awaiting and turn.text.strip():
+                awaiting = False
+                offset = turn.t
+        return offset if offset is not None and math.isfinite(offset) and offset >= 0 else None
 
 
 class VoiceProvider(Protocol):
@@ -258,7 +321,9 @@ def canned_data(visit_count: int = 1) -> dict[str, Any]:
         "v1_objection": {"value": ""},
         "v1_competitor": {"value": "pantoprazol"},
         "v1_current_preference": {"value": "pantoprazol"},
-        "v1_commitment": {"value": ""},
+        "v1_commitment": {
+            "value": "El visitador llevará muestras; el médico quedó en probarlas al recibirlas."
+        },
         "v1_next_action": {"value": "Llevarle muestras"},
         "v1_next_action_in_days": {"value": 14},
         "v1_samples_delivered": {"value": False},
@@ -268,6 +333,19 @@ def canned_data(visit_count: int = 1) -> dict[str, Any]:
             "value": "Interés 4/5 en ESOMED; no hubo pedido porque ya usa pantoprazol y le "
             "funciona. Quedó en probarlo si le llevan muestras en dos semanas."
         },
+        "v1_details_json": {
+            "value": {
+                "visit_objective": "Presentar ESOMED y explorar disposición a probarlo",
+                "discussion": "Conversaron sobre ESOMED y su preferencia actual por pantoprazol.",
+                "doctor_interest": "Probar ESOMED con muestras",
+                "doctor_disinterest": "No ve necesidad de cambiar lo que usa",
+                "doctor_reaction": "Escuchó y pidió muestras para conocer el producto",
+                "new_information": "Usa pantoprazol desde hace años y le funciona bien",
+                "receptiveness_score": 4,
+                "free_note": "Nada adicional",
+            }
+        },
+        "v1_report_confirmed": {"value": False},
         "uncertain_fields": {"value": ""},
         "interview_complete": {"value": True},
         "extra_visits_json": {"value": "[]"},
@@ -283,8 +361,13 @@ def canned_data(visit_count: int = 1) -> dict[str, Any]:
                 "order_taken": True,
                 "no_order_reason": "not_applicable",
                 "receptiveness": "high",
+                "commitment": "El visitador entregará el pedido de 10 cajas.",
                 "next_action": "Volver en un mes",
                 "next_action_in_days": 30,
+                "products_discussed": "ESOMED",
+                "visit_objective": "Presentar ESOMED",
+                "discussion": "Conversaron sobre disponibilidad de ESOMED para el consultorio.",
+                "receptiveness_score": 5,
                 "summary": "Hizo un pedido de 10 cajas de ESOMED.",
             }
             for n in range(2, visit_count + 1)

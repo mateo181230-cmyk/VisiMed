@@ -54,6 +54,7 @@ class Visit(Base):
     )
     primary_line_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("product_line.id"))
     scheduled_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    title: Mapped[str | None] = mapped_column(String(160), default=None)
     status: Mapped[str] = mapped_column(String(20), default="scheduled", index=True)
     planned_by: Mapped[str] = mapped_column(String(20), default="rep")
     suggestion_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, default=None)
@@ -70,6 +71,10 @@ class Visit(Base):
     arrival_distance_m: Mapped[int | None] = mapped_column(default=None)
     # --- «Terminé»: ídem
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    report_notified_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    report_due_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    report_invalid_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    report_mode: Mapped[str | None] = mapped_column(String(12), default=None)
     finish_fix_ts: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     finish_lat: Mapped[float | None] = mapped_column(default=None)
     finish_lng: Mapped[float | None] = mapped_column(default=None)

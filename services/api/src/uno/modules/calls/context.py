@@ -23,6 +23,9 @@ class VisitBrief:
     line_code: str
     scheduled_at: datetime  # la hora agendada; el visitador la reconoce mejor que la del toque
     arrived_at: datetime | None = None
+    previous_next_action: str | None = None
+    previous_visit_at: datetime | None = None
+    report_due_at: datetime | None = None
 
 
 def first_name(full_name: str) -> str:
@@ -91,8 +94,14 @@ def short_label(brief: VisitBrief, tz_name: str, include_names: bool) -> str:
 
 
 def _first_question(brief: VisitBrief, tz_name: str, include_names: bool) -> str:
+    if brief.previous_next_action:
+        label = visit_label(brief, tz_name, include_names)
+        return (
+            f"Vi que terminaste {label}. Recuerda el pendiente de la visita anterior: "
+            f"{brief.previous_next_action}. ¿Cómo te fue con eso?"
+        )
     if include_names:
-        return f"¿Cómo te fue con {doctor_phrase(brief.doctor_name)}?"
+        return f"Vi que terminaste tu visita con {doctor_phrase(brief.doctor_name)}. ¿Cómo te fue?"
     return f"¿Cómo te fue en {visit_label(brief, tz_name, False)}?"
 
 
@@ -102,6 +111,8 @@ def build_dynamic_variables(
     *,
     tz_name: str,
     include_names: bool,
+    now: datetime | None = None,
+    purpose: str = "summary",
 ) -> dict[str, str]:
     """Variables del agente (``infra/elevenlabs/agent.json``): saludo, visitas y pregunta."""
     if not visits:
@@ -115,18 +126,45 @@ def build_dynamic_variables(
             f"{index}. La visita de {spoken_time(brief.scheduled_at, tz_name)}{who}"
             f"{_where(brief.institution)} (línea {brief.line_code})."
         )
+        if brief.previous_next_action:
+            date = (
+                clock.local_date(brief.previous_visit_at, tz_name).isoformat()
+                if brief.previous_visit_at
+                else "anterior"
+            )
+            lines.append(
+                f"   Antecedente confirmado ({date}): {brief.previous_next_action}. "
+                "Es un pendiente anterior, no evidencia de cumplimiento en la visita actual."
+            )
+        if brief.report_due_at:
+            lines.append(f"   El resumen vence a {spoken_time(brief.report_due_at, tz_name)}.")
 
     if len(visits) == 1:
         opening = _first_question(visits[0], tz_name, include_names)
     else:
         first = short_label(visits[0], tz_name, include_names)
         opening = (
-            f"Tengo {len(visits)} visitas tuyas por reportar. Empecemos con {first}: "
-            "¿cómo te fue?"
+            f"Tengo {len(visits)} visitas tuyas por reportar. Empecemos con {first}: ¿cómo te fue?"
+        )
+    narrative_question = opening
+    if purpose == "reminder":
+        opening = (
+            f"Oye, ¿ya estás cerca? Tienes {visit_label(visits[0], tz_name, include_names)} "
+            f"a {spoken_time(visits[0].scheduled_at, tz_name)}."
+        )
+    elif purpose == "visit_checkin":
+        opening = "Oye, llevas más de 30 minutos en la reunión. ¿Ya terminaste o sigues reunido?"
+    else:
+        opening = (
+            "Oye, ¿tienes tiempo para hacer tu resumen o prefieres hacerlo por escrito en la app?"
         )
     return {
+        "tipo_llamada": purpose,
         "visitador_nombre": first_name(representative_name),
         "num_visitas": str(len(visits)),
         "visitas_texto": "\n".join(lines),
         "pregunta_inicial": opening,
+        "pregunta_relato": narrative_question,
+        "fecha_actual": clock.local_date(now or clock.now(), tz_name).isoformat(),
+        "zona_horaria": tz_name,
     }

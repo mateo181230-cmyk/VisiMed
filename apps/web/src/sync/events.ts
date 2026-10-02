@@ -78,6 +78,19 @@ export const EDITABLE_REPORT_FIELDS = [
   'next_action',
   'territory_signal',
   'summary',
+  'visit_objective',
+  'discussion',
+  'doctor_interest',
+  'doctor_disinterest',
+  'doctor_reaction',
+  'new_information',
+  'receptiveness_score',
+  'free_note',
+  'products_discussed',
+  'current_preference',
+  'receptiveness',
+  'samples_delivered',
+  'next_action_date',
 ] as const
 export type EditableReportField = (typeof EDITABLE_REPORT_FIELDS)[number]
 
@@ -90,13 +103,29 @@ export interface ReportFieldEditedPayload {
 export type EventSpec =
   | { type: 'doctor_created'; visitId: null; payload: DoctorCreatedPayload }
   | { type: 'visit_scheduled'; visitId: string; payload: VisitScheduledPayload }
-  | { type: 'visit_rescheduled'; visitId: string; payload: VisitRescheduledPayload }
+  | {
+      type: 'visit_rescheduled'
+      visitId: string
+      payload: VisitRescheduledPayload
+    }
   | { type: 'visit_not_done'; visitId: string; payload: VisitNotDonePayload }
   | { type: 'visit_arrived'; visitId: string; payload: VisitTouchPayload }
   | { type: 'visit_finished'; visitId: string; payload: VisitTouchPayload }
-  | { type: 'visit_location_retried'; visitId: string; payload: VisitLocationRetriedPayload }
-  | { type: 'report_confirmed'; visitId: string; payload: Record<string, never> }
-  | { type: 'report_field_edited'; visitId: string; payload: ReportFieldEditedPayload }
+  | {
+      type: 'visit_location_retried'
+      visitId: string
+      payload: VisitLocationRetriedPayload
+    }
+  | {
+      type: 'report_confirmed'
+      visitId: string
+      payload: Record<string, never>
+    }
+  | {
+      type: 'report_field_edited'
+      visitId: string
+      payload: ReportFieldEditedPayload
+    }
 
 export const doctorCreated = (payload: DoctorCreatedPayload): EventSpec => ({
   type: 'doctor_created',

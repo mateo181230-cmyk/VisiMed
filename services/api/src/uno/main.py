@@ -19,6 +19,7 @@ from uno.context import build_context
 from uno.modules.agenda import routes as agenda_routes
 from uno.modules.auth import routes as auth_routes
 from uno.modules.calls import routes as call_routes
+from uno.modules.calls.intelligence import router as intelligence_router
 from uno.modules.calls.provider import VoiceProvider
 from uno.modules.catalog import admin as admin_routes
 from uno.modules.notifications import routes as notification_routes
@@ -93,6 +94,7 @@ def create_app(
     app.include_router(sync_routes.router)
     app.include_router(notification_routes.router)
     app.include_router(call_routes.router)
+    app.include_router(intelligence_router)
     app.include_router(admin_routes.router)
     app.include_router(training_routes.router)
     app.include_router(training_routes.webhooks)

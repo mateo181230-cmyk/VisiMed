@@ -22,6 +22,7 @@ import {
   configureAuthHandlers,
   login,
   logout,
+  register,
   setAccessToken,
 } from '../../api/client'
 import { delMeta, getMeta, setMeta, wipeLocalData } from '../../db/db'
@@ -36,6 +37,7 @@ interface AuthValue {
   needsReauth: boolean
   /** Devuelve un mensaje de error en español, o ``null`` si ingresó. */
   signIn: (phone: string, pin: string) => Promise<string | null>
+  signUp: (fullName: string, phone: string, email: string, pin: string, inviteCode: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -100,6 +102,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   }, [])
 
+  const signUp = useCallback(async (fullName: string, phone: string, email: string, pin: string, inviteCode: string): Promise<string | null> => {
+    const res = await register(fullName.trim(), toE164(phone), email.trim(), pin, inviteCode.trim())
+    if (!res.ok) {
+      if (res.kind === 'network') return 'Necesitas conexión para registrarte.'
+      if (res.kind === 'client' && res.code === 'phone_taken') return 'Ese celular ya tiene una cuenta. Ingresa con tu PIN.'
+      if (res.kind === 'client' && res.code === 'invalid_invite') return 'El código de invitación no es válido.'
+      if (res.kind === 'client') return res.message ?? 'Revisa los datos e inténtalo de nuevo.'
+      return 'No pudimos crear la cuenta. Inténtalo de nuevo.'
+    }
+    const previous = await getMeta<UserOut>('user')
+    if (previous && previous.id !== res.data.user.id) await wipeLocalData()
+    setAccessToken(res.data.access_token)
+    await persist(res.data)
+    setUser(res.data.user)
+    setNeedsReauth(false)
+    setStatus('authed')
+    return null
+  }, [])
+
   const signOut = useCallback(async (): Promise<void> => {
     await logout()
     await wipeLocalData()
@@ -110,8 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(
-    () => ({ status, user, needsReauth, signIn, signOut }),
-    [status, user, needsReauth, signIn, signOut],
+    () => ({ status, user, needsReauth, signIn, signUp, signOut }),
+    [status, user, needsReauth, signIn, signUp, signOut],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

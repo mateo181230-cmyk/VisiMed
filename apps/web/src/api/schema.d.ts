@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description Estado del sistema, sin datos personales (doc 01 §17).
+         * @description Estado del sistema, sin datos personales (doc 01 �17).
          */
         get: operations["health_salud_get"];
         put?: never;
@@ -104,6 +104,40 @@ export interface paths {
         put?: never;
         /** Refresh */
         post: operations["refresh_v1_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/intelligence/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Snapshot */
+        get: operations["snapshot_v1_intelligence_snapshot_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -709,7 +743,7 @@ export interface components {
         };
         /**
          * GeoOut
-         * @description Resultado de geocerca de un momento («Llegué» o «Terminé»). Sin coordenadas: el teléfono
+         * @description Resultado de geocerca de un momento (�Llegu� o �Termin�). Sin coordenadas: el tel�fono
          *     ya las tiene y no hace falta devolverlas.
          */
         GeoOut: {
@@ -820,8 +854,119 @@ export interface components {
             /** Suggested Slug */
             suggested_slug: string | null;
         };
+        /** PilotDoctor */
+        PilotDoctor: {
+            /** Address */
+            address: string | null;
+            /** Default Line Id */
+            default_line_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Institution */
+            institution: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Representative Id
+             * Format: uuid
+             */
+            representative_id: string;
+            /** Review State */
+            review_state: string;
+            /** Specialty */
+            specialty: string | null;
+            /** Zone */
+            zone: string | null;
+        };
+        /** PilotRepresentative */
+        PilotRepresentative: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** PilotSnapshot */
+        PilotSnapshot: {
+            /** Doctors */
+            doctors: components["schemas"]["PilotDoctor"][];
+            /**
+             * Esomed Connected
+             * @default false
+             */
+            esomed_connected: boolean;
+            /**
+             * History Since
+             * Format: date-time
+             */
+            history_since: string;
+            /** Lines */
+            lines: components["schemas"]["LineOut"][];
+            /**
+             * Now
+             * Format: date-time
+             */
+            now: string;
+            /** Reports */
+            reports: components["schemas"]["ReportOut"][];
+            /** Representatives */
+            representatives: components["schemas"]["PilotRepresentative"][];
+            /** Timezone */
+            timezone: string;
+            /** Visits */
+            visits: components["schemas"]["PilotVisit"][];
+        };
+        /** PilotVisit */
+        PilotVisit: {
+            /** Arrival Geo State */
+            arrival_geo_state: string | null;
+            /** Arrived At */
+            arrived_at: string | null;
+            /** Discussed Line Ids */
+            discussed_line_ids?: string[];
+            /**
+             * Doctor Id
+             * Format: uuid
+             */
+            doctor_id: string;
+            /** Finish Geo State */
+            finish_geo_state: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Primary Line Id
+             * Format: uuid
+             */
+            primary_line_id: string;
+            /**
+             * Representative Id
+             * Format: uuid
+             */
+            representative_id: string;
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title?: string | null;
+        };
         /** PreferencesIn */
         PreferencesIn: {
+            /** Call Remind Before Min */
+            call_remind_before_min?: number | null;
             /** Digest Enabled */
             digest_enabled?: boolean | null;
             /** Digest Time */
@@ -835,12 +980,24 @@ export interface components {
         };
         /** PreferencesOut */
         PreferencesOut: {
+            /**
+             * Call Delivery Available
+             * @default false
+             */
+            call_delivery_available: boolean;
+            /**
+             * Call Remind Before Min
+             * @default 5
+             */
+            call_remind_before_min: number;
             /** Digest Enabled */
             digest_enabled: boolean;
             /** Digest Time */
             digest_time: string;
             /** Email */
             email: string | null;
+            /** Email Delivery Available */
+            email_delivery_available: boolean;
             /** Email Enabled */
             email_enabled: boolean;
             /** Email Verified */
@@ -849,6 +1006,8 @@ export interface components {
             pending_email: string | null;
             /** Push Available */
             push_available: boolean;
+            /** Push Delivery Available */
+            push_delivery_available: boolean;
             /** Push Enabled */
             push_enabled: boolean;
             /** Push Subscriptions */
@@ -992,6 +1151,19 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** RegisterIn */
+        RegisterIn: {
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /** Invite Code */
+            invite_code: string;
+            /** Phone */
+            phone: string;
+            /** Pin */
+            pin: string;
+        };
         /** ReportFieldOut */
         ReportFieldOut: {
             /** Confidence */
@@ -1003,7 +1175,7 @@ export interface components {
         };
         /**
          * ReportOut
-         * @description La ficha de una visita: lo que contó el visitador en la llamada, con su confianza.
+         * @description La ficha de una visita: lo que cont� el visitador en la llamada, con su confianza.
          */
         ReportOut: {
             /** Complete */
@@ -1368,6 +1540,14 @@ export interface components {
              * Format: uuid
              */
             primary_line_id: string;
+            /** Report Due At */
+            report_due_at?: string | null;
+            /** Report Invalid At */
+            report_invalid_at?: string | null;
+            /** Report Mode */
+            report_mode?: string | null;
+            /** Report Notified At */
+            report_notified_at?: string | null;
             /**
              * Scheduled At
              * Format: date-time
@@ -1375,6 +1555,8 @@ export interface components {
             scheduled_at: string;
             /** Status */
             status: string;
+            /** Title */
+            title?: string | null;
             /**
              * Updated At
              * Format: date-time
@@ -1563,6 +1745,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    register_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    snapshot_v1_intelligence_snapshot_get: {
+        parameters: {
+            query?: {
+                history_days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotSnapshot"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

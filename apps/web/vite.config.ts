@@ -7,6 +7,7 @@ import { defineConfig } from 'vitest/config'
 // La API corre en :8000 (uvicorn). El proxy mantiene el mismo origen, así la cookie de refresco
 // (httpOnly, SameSite=Strict) funciona igual en desarrollo y en producción.
 const apiTarget = process.env.VITE_API_TARGET ?? 'http://127.0.0.1:8000'
+const previewAllowedHosts = (process.env.VITE_PREVIEW_ALLOWED_HOSTS ?? '').split(',').map((host) => host.trim()).filter(Boolean)
 const proxy = {
   '/v1': { target: apiTarget, changeOrigin: false },
   '/salud': { target: apiTarget, changeOrigin: false },
@@ -25,8 +26,8 @@ export default defineConfig({
       injectRegister: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
-        // La videollamada del médico virtual (Entrenar) necesita red: su librería no se precarga.
-        globIgnores: ['**/daily-esm-*.js'],
+        // También se guarda el pequeño cliente de Daily: una PWA con la versión anterior
+        // debe poder cargar su chunk mientras instala la actualización. La llamada exige red.
       },
       manifest: {
         name: 'UNO Visitas',
@@ -49,7 +50,7 @@ export default defineConfig({
     }),
   ],
   server: { port: 5173, proxy },
-  preview: { port: 4173, proxy },
+  preview: { port: 4173, proxy, allowedHosts: previewAllowedHosts },
   test: {
     environment: 'jsdom',
     globals: true,

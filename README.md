@@ -4,7 +4,7 @@ PWA para visitadores médicos: agenda propia, «Llegué / Terminé», llamada de
 
 Los documentos de diseño están en [`../Plan UNO Visitas`](../Plan%20UNO%20Visitas) (arquitectura 01, plan de trabajo 02, inteligencia y ML 03, práctica con médico virtual 04). Este repositorio es la construcción de ese plan.
 
-## Estado (29 de septiembre de 2026)
+## Estado (30 de septiembre de 2026)
 
 | Módulo | Qué hace | Estado |
 | --- | --- | --- |
@@ -15,17 +15,59 @@ Los documentos de diseño están en [`../Plan UNO Visitas`](../Plan%20UNO%20Visi
 | **Avisos** | Notificaciones en el teléfono (Web Push) y por correo (pre-registrado por el administrador o verificado con código): recordatorio antes de cada visita y resumen del día | ✅ Hecho y probado |
 | **Bitácora de eventos** | `domain_event` append-only con doble marca de tiempo (base de la capa de inteligencia) | ✅ Hecho y probado |
 | **Llegué / Terminé + ubicación** | Permiso de ubicación obligatorio, una lectura por toque (sin GPS continuo), geocerca calculada en el teléfono y en el servidor, reintento de ubicación | ✅ Hecho y probado ([ADR-22](docs/adr/ADR-22-ubicacion-obligatoria-un-toque.md)). Pendiente dentro de E4: deshacer, motivo de «lejos», cierre tardío, «Otro médico aquí», referencia automática y señales de consistencia |
-| **Llamada de resumen** | Al terminar, un agente de voz (ElevenLabs sobre un número de Telyaco) llama al visitador y le hace, como máximo, **seis preguntas** (interés 1–5, resultado —¿te compró o te encargó algo?—, objeción o por qué no —¿la competencia está mejor o no necesitaba cambiar?—, competencia, próximo paso y territorio) y arma una ficha por visita. Reintentos a +5 y +15 min, llamada de cierre a las 18:00, una sola llamada para varias visitas | ✅ Servidor y agente hechos y probados (simulador y 7 escenarios de conversación, 20 de 21 corridas correctas). ✅ **Primera llamada real hecha el 29 de septiembre de 2026** por **Twilio** (+1 570 776 9534 → celular colombiano): 113 s, 5 preguntas hechas y ficha correcta. Telyaco quedó descartado: su troncal rechazó la primera llamada (`403 Auth Failed`) ([ADR-23](docs/adr/ADR-23-llamadas-elevenlabs-telyaco-cola-propia.md)) |
-| **Historial y ficha** | Pestaña «Historial»: las visitas por día (Hoy, Ayer…), cada una con su resumen; se confirma con un toque y cada dato se puede corregir. Funciona sin red (los cambios van a la cola) y avisa cuántos resúmenes esperan | ✅ Hecho y probado (servidor: 15 pruebas; app: 19 pruebas; recorrido completo en el navegador con el proveedor simulado) |
-| **Entrenar** | Pestaña «Entrenar»: cuatro escenarios de ESOMED con un médico virtual en video (Tavus) y voz de ElevenLabs. En cada uno: lectura, formulario de 4 preguntas con explicación y fuente, visita de hasta 5 minutos y resultado con la rúbrica de Novamed (6 competencias × 5), sin puntos, trofeos ni bloqueos. El avance queda guardado por visitador; la gerencia tiene su resumen en la API (`/v1/manager/training`) | ✅ Hecho y probado (servidor: 53 pruebas; app: 6; recorrido completo con el médico simulado). Los 4 médicos están publicados en Tavus, pero ⛔ **la cuenta de Tavus no tiene créditos**: la app dice «no disponible por ahora» y deja hacer la preparación. Al recargar, funciona sin tocar código ([ADR-24](docs/adr/ADR-24-entrenar-medico-virtual-tavus.md)) |
-| Vista gerencial | Lista, evidencia, CSV | ⏳ E7 |
-| Inteligencia y decisión | Perfiles médico × línea, recomendación, agenda óptima | ⏳ E11 (después del piloto) |
+| **Llamada de resumen** | Una llamada por visita por defecto; conversación adaptativa, información nueva, nota libre, lectura del resumen y confirmación verbal. Recoge lo pendiente sin convertir la visita en una encuesta de pedidos. Reintentos y espera mientras el visitador está en otra visita | ✅ Código y agente actualizado en ElevenLabs. Telefonía con Twilio ([ADR-23](docs/adr/ADR-23-llamadas-elevenlabs-telyaco-cola-propia.md)). Meta de 1–2 min por visita; pendiente medir duración y naturalidad del nuevo guion con voz real |
+| **Historial y ficha** | Producto, objetivo, conversación, intereses/desintereses, reacción/receptividad, preguntas, información nueva, competencia, compromisos, próxima acción/fecha y nota libre; institución, ubicación y llegada/salida. Confirmación verbal respaldada por la transcripción, revisión y correcciones en la app | ✅ Recorrido simulado completo. Los campos no informados quedan pendientes; correcciones y confirmación manual funcionan sin red |
+| **Entrenar** | Pestaña «Entrenar»: cuatro escenarios de ESOMED con un médico virtual en video (Tavus) y voz de ElevenLabs. En cada uno: lectura, formulario de 4 preguntas con explicación y fuente, visita de hasta 5 minutos y resultado con la rúbrica de Novamed (6 competencias × 5), sin puntos, trofeos ni bloqueos. El avance queda guardado por visitador; la gerencia tiene su resumen en la API (`/v1/manager/training`) | ✅ Implementado (servidor: 54 pruebas; app: 232 pruebas en total). **30 sep:** 4 médicos publicados en la nueva cuenta y creación comprobada en `test_mode` (sin costo). El usuario confirmó la entrada y reproducción del médico en Chrome para Android tras corregir la carga; pendiente validar la nitidez del nuevo encuadre vertical y una visita completa con evaluación ([ADR-24](docs/adr/ADR-24-entrenar-medico-virtual-tavus.md)) |
+| Vista gerencial | Actividad de 30 días, médicos, duración, productos, cumplimiento por visitador, alertas e insights con evidencia | ✅ Conectada a reportes de UNO con acceso por rol. Exportación CSV pendiente |
+| Inteligencia y decisión | Historial médico × línea realmente presentada y próximos pasos basados en compromisos confirmados; programación en la agenda desde la cuenta del visitador | ✅ Reglas del piloto conectadas a datos de UNO y demo completa. ⏳ Conexión con ESOMED y validación con usuarios; ML no entrenado |
+
+## Explorar el módulo de Inteligencia
+
+Con la web en desarrollo, abre `http://localhost:5173/inteligencia/demo`. El módulo usa un marco
+de celular (hasta 480 px) también en escritorio. La navegación del visitador tiene cuatro accesos:
+**Hoy, Agenda, Recomendaciones y Entrenar**. Historial se conserva dentro de la cuenta.
+
+Recomendaciones muestra una sola próxima visita destacada y una lista breve. **Ver detalles** abre
+el propósito de la visita y módulos de evidencia, historial, productos, frecuencia y territorio;
+solo un módulo puede permanecer abierto a la vez. **Programar visita** permite aceptar el horario
+sugerido o cambiarlo y después abrir directamente el día programado.
+
+Los perfiles, el calendario de ejemplo, el aprendizaje y el resumen del equipo están bajo **Más
+opciones del módulo**. Allí se encuentran también los selectores de visitador y **Sin datos**,
+sin ocupar la pantalla principal. El calendario real del visitador sigue en **Agenda**.
+
+La demostración es pública porque solo contiene datos ficticios; guarda sus cambios en `sessionStorage`
+y no escribe en la agenda real ni llama a la API. **Restablecer ejemplo** recupera el escenario inicial.
+El recorrido completo está en `http://localhost:5173/inteligencia/demo/visita`: llegada, salida,
+llamada con guion simulado (audio opcional del navegador), corrección y confirmación. La visita
+confirmada alimenta el dashboard, historial e insights del ejemplo. No usa micrófono ni hace llamadas.
+
+La ruta autenticada `/inteligencia` consulta `/v1/intelligence/snapshot`: hasta 365 días de historial,
+panel y agenda. El visitador solo recibe sus datos; gerencia y administración consultan el equipo.
+Administradores y gerentes llegan allí al ingresar; los visitadores acceden desde su navegación.
+Las recomendaciones de seguimiento requieren un reporte completo y confirmado, una acción pendiente
+y una línea identificada en el catálogo a partir del producto reportado. La agenda no demuestra qué
+producto se presentó. Si el producto no tiene correspondencia, la línea queda por verificar.
+Programar una sugerencia envía un evento real de agenda; descartar o revisar una observación se
+conserva en esta sesión. La disponibilidad del médico debe acordarse con el consultorio.
+
+Las alertas son señales de revisión: menos de 3 min, más de 3 horas o duración negativa,
+ubicación pendiente, información esencial incompleta, tres visitas de la misma línea en siete días
+y contexto sin actualizar durante 90 días. Los insights cuentan menciones confirmadas y excluyen
+campos de baja confianza. No implican causalidad ni una evaluación del visitador.
+La integración con médicos, visitadores, rutas, instituciones e históricos de ESOMED sigue pendiente.
+
+La verificación de este cambio incluyó el recorrido en navegador hasta programar la fecha corregida,
+pruebas de la app y del servidor, y simulaciones de texto del agente: confirmación, correcciones,
+visita no realizada, reintento, ausencia de receptividad, datos de paciente y varias visitas.
+El agente usa Gemini 3.5 Flash; la llamada del piloto contiene una visita por defecto. Las simulaciones
+no comprueban la duración, la transcripción de voz ni la naturalidad: eso queda para la prueba telefónica.
 
 ## Estructura
 
 ```
 apps/web/             PWA (React 19 + TypeScript + Vite + Tailwind 4 + Dexie)
-  src/features/       auth · agenda · geo · visit · notifications · training   (un módulo por carpeta)
+  src/features/       auth · agenda · geo · visit · notifications · training · intelligence
   src/sync/           cola local, motor de sincronización, vista optimista
   src/sw.ts           service worker: precache, navegación offline, avisos push
 services/api/         API (FastAPI + SQLAlchemy 2 async + Alembic)
@@ -65,6 +107,14 @@ corepack pnpm dev                            # http://localhost:5173 (proxy a la
 
 En desarrollo, `UNO_EMBEDDED_WORKER=true` corre el trabajador de recordatorios dentro de la API y `UNO_EMAIL_BACKEND=file` deja cada correo como `.eml` en `services/api/var/mail/`.
 
+Para enviar correos reales a cualquier destinatario del piloto, configura una sola cuenta
+remitente con SMTP (`UNO_EMAIL_BACKEND=smtp`, host, puerto, TLS, usuario y `UNO_EMAIL_FROM`).
+Guarda `UNO_SMTP_PASSWORD` solo en `~/.uno-visitas/secrets.env`, fuera del repositorio.
+Con Gmail personal, usa una contraseña de aplicación de una cuenta con verificación en dos pasos;
+la contraseña normal de Google no sirve para este flujo. Cada visitador confirma su propio correo
+desde **Mi cuenta → Avisos**. Mientras el backend sea `file`, la app indica que el envío no está
+conectado y el botón de prueba no afirma haber entregado un correo.
+
 ### Con PostgreSQL 16 (Docker)
 
 ```powershell
@@ -74,6 +124,13 @@ docker compose up --build            # API en :8000, correos en http://localhost
 ```
 
 ## Usuarios
+
+En el piloto, la pantalla **Crear cuenta** pide nombre, celular, correo, PIN y un código de
+invitación. Configura `UNO_PILOT_INVITE_CODE` fuera del repositorio para habilitarla; sin código,
+el registro público queda cerrado. Las cuentas nuevas son visitadores. El correo queda guardado,
+pero no recibe avisos hasta que el usuario lo confirme en **Más → Avisos**. En desarrollo,
+`UNO_EMAIL_BACKEND=file` escribe esos códigos en `services/api/var/mail/`; para recibirlos en el
+celular hace falta configurar SMTP.
 
 ```powershell
 uv run python -m uno.cli create-user --name "Ana Pérez" --phone +573001234567 --role rep --email ana@correo.com
@@ -97,9 +154,35 @@ uv run python -m uno.cli set-institution-ref --name "Hospital San Rafael" --lat 
   Las instituciones que ya existían en una base anterior conservan 150 m; súbelas con `--radius 300`. Sin referencia, la ubicación se guarda y el estado es `sin_referencia`.
 - **Probar en un teléfono.** *Más → Probar ubicación* muestra una lectura suelta contra un punto (pega las coordenadas desde Google Maps). Necesita HTTPS: usa el túnel de la sección de notificaciones.
 
-## Llamada de resumen (ElevenLabs + Telyaco)
+## Llamada de resumen (ElevenLabs + Twilio)
 
-Al tocar «Terminé», el servidor agrupa las visitas terminadas del visitador (hasta 5) en **una** llamada, la marca desde un número de Telyaco con un agente de ElevenLabs y convierte la conversación en una ficha por visita. Solo llama entre las 7:00 y las 19:00, espera si el visitador está en otra visita, reintenta a los +5 y +15 min y, si nadie contesta, hace una llamada de cierre a las 18:00.
+Antes de cada reunión, el servidor programa una llamada de recordatorio: 5 minutos antes por
+defecto (15:00 → 14:55), configurable o desactivable en **Mi cuenta → Avisos**. Esta llamada
+pregunta «Oye, ¿ya estás cerca?» y no solicita un reporte. Es independiente de push y correo.
+
+Si pasan 30 minutos desde «Llegué» sin «Terminé», llama para preguntar si ya terminó. Si el
+visitador sigue reunido, conserva la reunión abierta y espera a «Terminé». Solo un cierre
+explícito por voz registra una salida; queda sin GPS, nunca se inventa una ubicación.
+
+Al tocar «Terminé», el servidor programa una llamada para esa visita por defecto. Primero ofrece
+«Oye, ¿tienes tiempo para hacer tu resumen o prefieres hacerlo por escrito en la app?».
+Si elige escribir o no tiene tiempo, queda el indicador de resumen pendiente y puede escribir
+desde el historial sin una entrevista previa. Si acepta hablar, el agente escucha
+el relato, pregunta solo por datos pendientes, ofrece una nota libre, lee el resumen y espera la
+confirmación explícita. Una corrección exige nueva lectura y confirmación. La ficha se guarda
+confirmada solo si el análisis y la transcripción respaldan esa aceptación; en otro caso queda
+para revisar en la app. La información puede estar confirmada y seguir incompleta.
+
+Solo llama entre las 7:00 y las 19:00, espera si el visitador está en otra visita incluso en un
+reintento y reintenta a los +5 y +15 min dentro del plazo original. El resumen debe completarse
+y confirmarse en 30 minutos desde el primer aviso telefónico; el servidor registra ese aviso
+cuando el proveedor acepta la marcación. Un fallo al marcar no inicia el plazo y los reintentos
+no lo reinician. Si confirma que sigue reunido, se quita el plazo provisional. Al vencer, solo
+el resumen queda inválido: se conserva la visita y puede guardarse un texto tardío, marcado
+fuera de plazo. No se hace una llamada de cierre por un resumen ya vencido. Una confirmación
+hecha sin red antes del límite conserva su validez al sincronizar.
+`UNO_CALL_MAX_VISITS_PER_CALL=1` es el valor predeterminado; se pueden agrupar hasta 5 con confirmación
+individual. La meta de 1–2 minutos es por visita, no por lote. No es un corte que fuerce datos inventados.
 
 **Las llaves viven fuera del repositorio y de OneDrive**, en `~/.uno-visitas/secrets.env` (la lee `config.py`):
 
@@ -124,11 +207,11 @@ uv run python -m uno.cli calls-show 01a0eb7f              # fichas y transcripci
 ```
 
 - **La cuenta de ElevenLabs es compartida con otras campañas.** Los comandos solo tocan el agente «UNO Visitas · Entrevista de visita»; `elevenlabs-assign-number` **se niega** a quitarle un número a otro agente salvo `--force-reassign`.
-- **Cambiar lo que pregunta el agente** es editar `infra/elevenlabs/prompt.es.md` y correr `elevenlabs-apply`; después `elevenlabs-golden` comprueba que sigue extrayendo bien (7 escenarios: con pedido, sin pedido por competencia o por no necesitar cambiar, dos visitas, visita no realizada, visitador que no puede hablar, datos de paciente e intento de manipulación).
-- **Qué se extrae** está en `modules/calls/schema.py` (18 campos; ElevenLabs admite 25 y solo tipos simples). Las visitas adicionales de una llamada viajan juntas como JSON en un campo de texto; si ese JSON viene dañado, la primera ficha se conserva.
+- **Cambiar lo que pregunta el agente** es editar `infra/elevenlabs/prompt.es.md` y correr `elevenlabs-apply`; después `elevenlabs-golden --names` comprueba conversación, extracción y confirmación (10 escenarios, incluidos corrección y nueva lectura, receptividad no inferida y resumen sin confirmar).
+- **Qué se extrae** está en `modules/calls/schema.py`: 21 campos simples del proveedor, con un objeto JSON de detalles y un indicador de confirmación. Las visitas adicionales viajan como JSON. Un detalle dañado no elimina los demás datos. Producto, objetivo, conversación, resultado, compromisos, próximo paso y receptividad son esenciales; el resto permanece visible como no informado si falta. «No quedaron compromisos» es distinto de no haberlo preguntado.
 - **Resultado**: por webhook firmado (`POST /v1/webhooks/elevenlabs`, opcional) o por consulta directa cada 5 s (siempre activa). Ambos son idempotentes.
 - **Probar con tu celular**: `UNO_CALL_PHONE_OVERRIDE=+57…` desvía TODAS las llamadas a ese número (solo desarrollo; el servidor se niega a arrancar en producción con esta variable). Así la cuenta de demostración hace sonar el teléfono de quien prueba. Sin reintentos: `UNO_CALL_RETRY_MINUTES=` (vacío).
-- **Privacidad**: el agente no dice el nombre del médico salvo `UNO_CALL_INCLUDE_DOCTOR_NAMES=true` (decisión de legal pendiente). ElevenLabs conserva las conversaciones 30 días (`infra/elevenlabs/agent.json`).
+- **Nombres y datos**: `UNO_CALL_INCLUDE_DOCTOR_NAMES=true` permite el saludo contextual por defecto; se puede desactivar. El agente excluye identificadores de pacientes de la ficha. Coordenadas y transcripción no se envían al dashboard. ElevenLabs conserva las conversaciones 30 días (`infra/elevenlabs/agent.json`).
 
 ## Entrenar (médico virtual: Tavus + voz de ElevenLabs)
 
@@ -152,6 +235,7 @@ uv run python -m uno.cli training-cleanup            # borra en Tavus los médic
 
 - **Contenido como código.** Los médicos, lecciones, formularios y el banco de mensajes aprobados están en `services/api/src/uno/modules/training/content/`. Cambiar cara, voz, nombre o comportamiento es editar el JSON del escenario y correr `training-apply`: crea una versión nueva y las prácticas siguientes la usan.
 - **La cuenta de Tavus es compartida con otros proyectos.** Los comandos solo crean o borran médicos cuyo nombre empieza por «UNO Entrenar». El nombre lleva la huella del contenido: publicar lo mismo desde otra base de datos reutiliza el médico existente, no lo duplica.
+- **Cambiar de cuenta de Tavus:** después de actualizar la clave en `~/.uno-visitas/secrets.env`, corre `training-apply` y reinicia la API. El publicador comprueba que los médicos de la base local existen en la cuenta actual; si no, publica versiones nuevas y conserva las anteriores para el historial.
 - **Sin créditos no se rompe nada.** Al abrir Entrenar, el servidor pregunta a Tavus en modo de prueba (sin costo, como mucho cada 5 minutos). Si no hay créditos, la app muestra «no disponible por ahora», no pide el micrófono y deja hacer la lectura y el formulario. Cuando se recarguen, basta con volver a abrir la pestaña (el aviso se va en 5 minutos como máximo).
 - **Calificación preliminar.** Hoy la evaluación sale de reglas (las mismas del prototipo de Sangil) y la app lo dice. El juez con IA (documento 04, D3) la afinará cuando haya llave. Los umbrales de aprobación por escenario son una propuesta hasta que Novamed decida (D9).
 - **Probar sin Tavus:** `UNO_TRAINING_BACKEND=fake` simula al médico con una visita de ejemplo y deja ver el resultado completo. Las prácticas por día (`UNO_TRAINING_ATTEMPTS_PER_DAY`, 6) y los minutos por visita (`UNO_TRAINING_MAX_CALL_SECONDS`, 300) tienen tope.

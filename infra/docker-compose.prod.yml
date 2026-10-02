@@ -1,0 +1,84 @@
+name: uno-visitas
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: uno
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define la clave de PostgreSQL}
+      POSTGRES_DB: uno
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uno -d uno"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  api: &api
+    image: uno-visitas-api:${UNO_RELEASE_ID:?Define la versión del despliegue}
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    env_file: ${UNO_RUNTIME_ENV_FILE:-/opt/uno-visitas/runtime.env}
+    environment:
+      UNO_ENV: prod
+      UNO_COOKIE_SECURE: "true"
+      UNO_EMBEDDED_WORKER: "false"
+    command:
+      - sh
+      - -c
+      - >-
+        python -m uno.cli db-upgrade &&
+        python -m uno.cli seed-lines &&
+        exec uvicorn uno.main:app_factory --factory --host 0.0.0.0 --port 8000
+        --proxy-headers --forwarded-allow-ips=*
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    logging: *logging
+
+  worker:
+    <<: *api
+    command: ["python", "-m", "uno.cli", "worker"]
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web:
+    image: uno-visitas-web:${UNO_RELEASE_ID:?Define la versión del despliegue}
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${UNO_HTTP_PORT:-3280}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/salud"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+volumes:
+  pgdata:

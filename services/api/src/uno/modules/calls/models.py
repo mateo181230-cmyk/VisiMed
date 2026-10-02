@@ -43,6 +43,8 @@ class Call(Base):
         ForeignKey("app_user.id", ondelete="CASCADE"), index=True
     )
     direction: Mapped[str] = mapped_column(String(10), default="outbound")
+    purpose: Mapped[str] = mapped_column(String(20), default="summary")
+    reminder_key: Mapped[str | None] = mapped_column(String(100), unique=True, default=None)
     status: Mapped[str] = mapped_column(String(12), default="queued")
     attempt: Mapped[int] = mapped_column(default=0)  # veces que se ha marcado
     scheduled_for: Mapped[datetime] = mapped_column(UTCDateTime)

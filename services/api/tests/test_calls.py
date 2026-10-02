@@ -46,7 +46,12 @@ def fake(env: Env) -> FakeProvider:
 
 
 async def finish_visits(
-    env: Env, token: str, count: int = 1, *, gap_min: int = 10, institution_name: str = "Clínica Central"
+    env: Env,
+    token: str,
+    count: int = 1,
+    *,
+    gap_min: int = 10,
+    institution_name: str = "Clínica Central",
 ) -> list[uuid.UUID]:
     """El visitador agenda, llega y termina ``count`` visitas (todas quedan ``finished``)."""
     institution = {"id": str(uuid.uuid4()), "name": institution_name, "city": "Bogotá"}
@@ -90,7 +95,9 @@ async def all_calls(env: Env) -> list[Call]:
 async def call_visit_ids(env: Env, call_id: uuid.UUID) -> list[uuid.UUID]:
     async with env.ctx.sessionmaker() as s:
         rows = await s.execute(
-            select(CallVisit.visit_id).where(CallVisit.call_id == call_id).order_by(CallVisit.position)
+            select(CallVisit.visit_id)
+            .where(CallVisit.call_id == call_id)
+            .order_by(CallVisit.position)
         )
         return list(rows.scalars())
 
@@ -117,7 +124,10 @@ async def run_until_dialed(env: Env) -> Call:
 
 
 def webhook_body(
-    conversation_id: str, call_id: uuid.UUID, data: dict[str, Any] | None = None, status: str = "done"
+    conversation_id: str,
+    call_id: uuid.UUID,
+    data: dict[str, Any] | None = None,
+    status: str = "done",
 ) -> dict[str, Any]:
     return {
         "type": "post_call_transcription",
@@ -167,7 +177,7 @@ async def test_calls_are_off_by_default(env: Env) -> None:
 
 
 async def test_all_finished_visits_go_in_one_call_in_order(make_env: Any) -> None:
-    async with calls_env(make_env) as env:
+    async with calls_env(make_env, call_max_visits_per_call=5) as env:
         token = await rep_token(env)
         ids = await finish_visits(env, token, 3)
         await run_until_dialed(env)
@@ -190,7 +200,7 @@ async def test_it_waits_for_another_visit_after_finish(make_env: Any) -> None:
 
 
 async def test_at_most_five_visits_per_call_and_one_live_call_per_rep(make_env: Any) -> None:
-    async with calls_env(make_env) as env:
+    async with calls_env(make_env, call_max_visits_per_call=5) as env:
         token = await rep_token(env)
         ids = await finish_visits(env, token, 7)
         first = await run_until_dialed(env)
@@ -224,9 +234,16 @@ async def test_no_call_while_rep_is_in_another_visit(make_env: Any) -> None:
 
 @pytest.mark.parametrize(
     ("hour_utc", "expect_call"),
-    [(11, False), (12, True), (23, True), (23.99, False)],  # Bogotá = UTC−5: 06:00, 07:00, 18:00, 19:00
+    [
+        (11, False),
+        (12, True),
+        (23, True),
+        (23.99, False),
+    ],  # Bogotá = UTC−5: 06:00, 07:00, 18:00, 19:00
 )
-async def test_calls_only_inside_the_window(make_env: Any, hour_utc: float, expect_call: bool) -> None:
+async def test_calls_only_inside_the_window(
+    make_env: Any, hour_utc: float, expect_call: bool
+) -> None:
     async with calls_env(make_env) as env:
         token = await rep_token(env)
         await finish_visits(env, token)
@@ -272,7 +289,10 @@ async def test_answered_call_creates_the_report_and_marks_visit_ready(make_env: 
         assert f["no_order_reason"]["value"] == "no_need_to_switch"
         assert f["competitor"]["value"] == "pantoprazol"
         assert f["next_action_in_days"]["value"] == 14
-        assert f["next_action_due"]["value"] == (clock.local_date(clock.now(), "America/Bogota") + timedelta(days=14)).isoformat()
+        assert (
+            f["next_action_due"]["value"]
+            == (clock.local_date(clock.now(), "America/Bogota") + timedelta(days=14)).isoformat()
+        )
         assert all(entry["source"] == "call" for entry in f.values())
 
         done = (await all_calls(env))[0]
@@ -282,13 +302,23 @@ async def test_answered_call_creates_the_report_and_marks_visit_ready(make_env: 
         # La bitácora de dominio recibe hechos, nunca texto libre ni datos personales.
         async with env.ctx.sessionmaker() as s:
             events = (
-                await s.execute(
-                    select(DomainEvent).where(
-                        DomainEvent.event_type.in_(["call_placed", "call_completed", "visit_extracted"])
+                (
+                    await s.execute(
+                        select(DomainEvent).where(
+                            DomainEvent.event_type.in_(
+                                ["call_placed", "call_completed", "visit_extracted"]
+                            )
+                        )
                     )
                 )
-            ).scalars().all()
-        assert {e.event_type for e in events} == {"call_placed", "call_completed", "visit_extracted"}
+                .scalars()
+                .all()
+            )
+        assert {e.event_type for e in events} == {
+            "call_placed",
+            "call_completed",
+            "visit_extracted",
+        }
 
         def keys(value: Any) -> set[str]:
             if isinstance(value, dict):
@@ -302,7 +332,7 @@ async def test_answered_call_creates_the_report_and_marks_visit_ready(make_env: 
 
 
 async def test_two_visits_two_reports_from_extra_json(make_env: Any) -> None:
-    async with calls_env(make_env) as env:
+    async with calls_env(make_env, call_max_visits_per_call=5) as env:
         token = await rep_token(env)
         ids = await finish_visits(env, token, 2)
         await run_until_dialed(env)
@@ -316,7 +346,7 @@ async def test_two_visits_two_reports_from_extra_json(make_env: Any) -> None:
 
 
 async def test_broken_extra_json_keeps_the_first_report(make_env: Any) -> None:
-    async with calls_env(make_env) as env:
+    async with calls_env(make_env, call_max_visits_per_call=5) as env:
         token = await rep_token(env)
         ids = await finish_visits(env, token, 2)
         data = canned_data(2)
@@ -339,7 +369,9 @@ async def test_rep_edits_are_never_overwritten_by_the_call(make_env: Any) -> Non
                 VisitReport(
                     visit_id=visit_id,
                     status="ready",
-                    fields={"interest_level": {"value": 2, "confidence": "high", "source": "rep_edit"}},
+                    fields={
+                        "interest_level": {"value": 2, "confidence": "high", "source": "rep_edit"}
+                    },
                     created_at=now,
                     updated_at=now,
                 )
@@ -349,7 +381,11 @@ async def test_rep_edits_are_never_overwritten_by_the_call(make_env: Any) -> Non
         await cycle(env, advance=20)
         report = await report_for(env, visit_id)
         assert report is not None
-        assert report.fields["interest_level"] == {"value": 2, "confidence": "high", "source": "rep_edit"}
+        assert report.fields["interest_level"] == {
+            "value": 2,
+            "confidence": "high",
+            "source": "rep_edit",
+        }
         assert report.fields["visit_outcome"]["source"] == "call"
 
 
@@ -387,7 +423,9 @@ async def test_no_contact_retries_at_5_then_15_minutes_then_fails(make_env: Any,
         assert call.failure_reason in {"no-answer", "busy", "voicemail"}
         assert await visit_status(env, visit_id) == "finished"
         async with env.ctx.sessionmaker() as s:
-            live = (await s.execute(select(CallVisit).where(CallVisit.live.is_(True)))).scalars().all()
+            live = (
+                (await s.execute(select(CallVisit).where(CallVisit.live.is_(True)))).scalars().all()
+            )
         assert live == []
 
 
@@ -413,7 +451,11 @@ async def test_provider_error_at_dial_time_is_retried_or_failed(make_env: Any) -
         await cycle(env, advance=21)
         await cycle(env)
         call = (await all_calls(env))[0]
-        assert call.status == "queued" and call.attempt == 1 and call.failure_reason == "provider_error"
+        assert (
+            call.status == "queued"
+            and call.attempt == 1
+            and call.failure_reason == "provider_error"
+        )
 
     async with calls_env(make_env) as env:
         token = await rep_token(env)
@@ -431,18 +473,21 @@ async def test_rep_who_cannot_talk_is_called_back_when_he_asks(make_env: Any) ->
         token = await rep_token(env)
         (visit_id,) = await finish_visits(env, token)
         fake(env)._script = lambda req: FakeOutcome(
-            data_collection={"callback_in_minutes": {"value": 30}, "interview_complete": {"value": False}}
+            data_collection={
+                "callback_in_minutes": {"value": 10},
+                "interview_complete": {"value": False},
+            }
         )
         await run_until_dialed(env)
         await cycle(env, advance=20)
         call = (await all_calls(env))[0]
         assert call.status == "queued" and call.failure_reason == "incomplete"
-        assert call.scheduled_for - clock.now() == timedelta(minutes=30)
+        assert call.scheduled_for - clock.now() == timedelta(minutes=10)
         assert await visit_status(env, visit_id) == "finished"
         assert await report_for(env, visit_id) is None
 
 
-async def test_closing_call_takes_the_leftovers_once_a_day(make_env: Any) -> None:
+async def test_expired_summary_does_not_trigger_an_evening_closing_call(make_env: Any) -> None:
     async with calls_env(make_env) as env:
         token = await rep_token(env)
         (visit_id,) = await finish_visits(env, token)
@@ -459,8 +504,10 @@ async def test_closing_call_takes_the_leftovers_once_a_day(make_env: Any) -> Non
         await cycle(env)
         await cycle(env)
         calls = await all_calls(env)
-        assert len(calls) == 2 and calls[1].is_closing
-        assert await call_visit_ids(env, calls[1].id) == [visit_id]
+        assert len(calls) == 1
+        async with env.ctx.sessionmaker() as session:
+            visit = await session.get(Visit, visit_id)
+            assert visit.report_invalid_at is not None
 
         # Si esa también falla, esa noche no hay una tercera.
         fake(env)._script = lambda req: FakeOutcome(kind="no_answer")
@@ -468,10 +515,10 @@ async def test_closing_call_takes_the_leftovers_once_a_day(make_env: Any) -> Non
             await cycle(env, advance=advance)
         env.clock.set(env.clock.t.replace(hour=23, minute=50))
         await cycle(env)
-        assert len(await all_calls(env)) == 2
+        assert len(await all_calls(env)) == 1
 
 
-async def test_visit_without_interview_after_24h_is_marked(make_env: Any) -> None:
+async def test_deadline_waits_for_notification_even_if_finish_was_yesterday(make_env: Any) -> None:
     async with calls_env(make_env) as env:
         token = await rep_token(env)
         (visit_id,) = await finish_visits(env, token)
@@ -480,8 +527,12 @@ async def test_visit_without_interview_after_24h_is_marked(make_env: Any) -> Non
         assert await visit_status(env, visit_id) == "finished"
         env.clock.advance(hours=2)  # ya pasaron más de 24 h desde el «Terminé»
         await cycle(env)
-        assert await visit_status(env, visit_id) == "no_interview"
-        assert await all_calls(env) == []  # ya no se llama por una visita caducada
+        assert await visit_status(env, visit_id) == "in_call"
+        async with env.ctx.sessionmaker() as session:
+            visit = await session.get(Visit, visit_id)
+            assert visit.report_notified_at == clock.now()
+            assert visit.report_due_at == clock.now() + timedelta(minutes=30)
+            assert visit.report_invalid_at is None
 
 
 # ------------------------------------------------------------------ webhook
@@ -515,7 +566,9 @@ async def test_webhook_completes_the_call_once(make_env: Any) -> None:
         assert transcript[0]["text"] == "Hola, soy UNO."  # sin la etiqueta [happy]
 
 
-async def test_webhook_finds_the_call_by_user_id_when_conversation_id_is_unknown(make_env: Any) -> None:
+async def test_webhook_finds_the_call_by_user_id_when_conversation_id_is_unknown(
+    make_env: Any,
+) -> None:
     async with calls_env(make_env) as env:
         token = await rep_token(env)
         call, visit_id = await dialing_call(env, token)
@@ -526,8 +579,12 @@ async def test_webhook_finds_the_call_by_user_id_when_conversation_id_is_unknown
 
 @pytest.mark.parametrize("problem", ["bad_secret", "stale", "no_header", "no_secret_configured"])
 async def test_webhook_rejects_bad_signatures(make_env: Any, problem: str) -> None:
-    overrides: dict[str, Any] = {"elevenlabs_webhook_secret": ""} if problem == "no_secret_configured" else {}
-    async with make_env(call_backend="fake", **({"elevenlabs_webhook_secret": SECRET} | overrides)) as env:
+    overrides: dict[str, Any] = (
+        {"elevenlabs_webhook_secret": ""} if problem == "no_secret_configured" else {}
+    )
+    async with make_env(
+        call_backend="fake", **({"elevenlabs_webhook_secret": SECRET} | overrides)
+    ) as env:
         token = await rep_token(env)
         call, visit_id = await dialing_call(env, token)
         body = webhook_body(call.provider_conversation_id or "", call.id)
@@ -614,13 +671,17 @@ async def test_elevenlabs_outbound_request_shape() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen["path"] = request.url.path
         seen["body"] = json.loads(request.content)
-        return httpx.Response(200, json={"success": True, "conversation_id": "conv_9", "sip_call_id": "sip_9"})
+        return httpx.Response(
+            200, json={"success": True, "conversation_id": "conv_9", "sip_call_id": "sip_9"}
+        )
 
     provider = eleven(handler)
     from uno.modules.calls.provider import DialRequest
 
     call_id = uuid.uuid4()
-    dialed = await provider.place_call(DialRequest(call_id, "+573001112233", {"visitador_nombre": "Ana"}))
+    dialed = await provider.place_call(
+        DialRequest(call_id, "+573001112233", {"visitador_nombre": "Ana"})
+    )
     assert (dialed.conversation_id, dialed.provider_call_id) == ("conv_9", "sip_9")
     assert seen["path"] == "/v1/convai/sip-trunk/outbound-call"
     assert seen["body"] == {
@@ -663,12 +724,24 @@ def test_parse_conversation_reads_the_real_shape() -> None:
             "conversation_id": "c1",
             "status": "done",
             "transcript": [
-                {"role": "agent", "message": "[happy] Hola", "time_in_call_secs": 0, "tool_calls": []},
+                {
+                    "role": "agent",
+                    "message": "[happy] Hola",
+                    "time_in_call_secs": 0,
+                    "tool_calls": [],
+                },
                 {"role": "user", "message": "  Bien  ", "time_in_call_secs": 4},
-                {"role": "agent", "message": None, "tool_calls": [{"tool_name": "voicemail_detection"}]},
+                {
+                    "role": "agent",
+                    "message": None,
+                    "tool_calls": [{"tool_name": "voicemail_detection"}],
+                },
             ],
             "metadata": {"call_duration_secs": 33, "termination_reason": "x"},
-            "analysis": {"data_collection_results": {"v1_interest_level": {"value": 3}}, "transcript_summary": "s"},
+            "analysis": {
+                "data_collection_results": {"v1_interest_level": {"value": 3}},
+                "transcript_summary": "s",
+            },
         }
     )
     assert result.status == "done" and result.user_turns == 1 and result.voicemail
@@ -742,7 +815,9 @@ async def test_the_allowlist_checks_the_number_that_will_actually_ring(make_env:
         await run_until_dialed(env)
         assert fake(env).requests[0].to_phone == "+573004198710"
 
-    async with build(REP_PHONE) as env:  # autorizado el del visitador, pero suena el de prueba: no sale
+    async with build(
+        REP_PHONE
+    ) as env:  # autorizado el del visitador, pero suena el de prueba: no sale
         token = await rep_token(env)
         await finish_visits(env, token)
         await cycle(env, advance=60)
@@ -785,7 +860,9 @@ async def test_a_twilio_number_is_detected_and_uses_the_twilio_endpoint() -> Non
         if request.method == "GET":
             return httpx.Response(200, json={"provider": "twilio", "phone_number": "+15707769534"})
         assert json.loads(request.content)["agent_phone_number_id"] == "phnum_1"
-        return httpx.Response(200, json={"success": True, "conversation_id": "c1", "callSid": "CA9"})
+        return httpx.Response(
+            200, json={"success": True, "conversation_id": "c1", "callSid": "CA9"}
+        )
 
     provider = eleven_auto(handler)
     request = DialRequest(uuid.uuid4(), "+573004198710", {"visitador_nombre": "Ana"})
@@ -808,7 +885,9 @@ async def test_a_sip_trunk_number_still_uses_the_sip_endpoint() -> None:
         paths.append(request.url.path)
         if request.method == "GET":
             return httpx.Response(200, json={"provider": "sip_trunk"})
-        return httpx.Response(200, json={"success": True, "conversation_id": "c", "sip_call_id": "s"})
+        return httpx.Response(
+            200, json={"success": True, "conversation_id": "c", "sip_call_id": "s"}
+        )
 
     dialed = await eleven_auto(handler).place_call(DialRequest(uuid.uuid4(), "+573004198710", {}))
     assert dialed.provider_call_id == "s"

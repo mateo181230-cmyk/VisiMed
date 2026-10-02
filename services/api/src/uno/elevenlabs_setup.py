@@ -25,8 +25,21 @@ REPO_ROOT = Path(__file__).resolve().parents[4]  # …/uno-visitas
 DEFAULT_CONFIG_DIR = REPO_ROOT / "infra" / "elevenlabs"
 
 END_CALL_DESCRIPTION = (
+    "En reminder, cuelga tras recordar la cita y despedirte, sin entrevista. "
+    "En visit_checkin, si sigue reunido, respeta la reunión y cuelga sin resumen. "
+    "Si elige escribir o no tiene tiempo, indica el pendiente y el plazo y cuelga. "
     "Cuelga la llamada. Úsala solo cuando ya tengas lo esencial de todas las visitas, ya hayas "
-    "dicho el resumen y te hayas despedido, o cuando el visitador no pueda hablar. Invócala en "
+    "leído el resumen, ESPERADO su respuesta a la confirmación y te hayas despedido, "
+    "o cuando el visitador no pueda hablar. Nunca cuelgues mientras esperas la confirmación. "
+    "Una visita no realizada TAMBIÉN requiere leer el motivo y próximo intento y preguntar "
+    "'¿Confirmas este resumen de la visita?' antes de colgar. 'No pude ver al doctor' no "
+    "significa que el visitador no pueda hablar ni autoriza terminar sin resumen. "
+    "Si decide revisar el resumen en la app, deja la confirmación pendiente y despídete sin "
+    "insistir. Si corrige un dato, lee el resumen corregido y espera una nueva respuesta antes "
+    "de terminar. "
+    "Con varios médicos NO basta confirmar el primero: espera la lectura y respuesta del "
+    "último médico antes de colgar. Iniciar la conversación del siguiente no es terminarla. "
+    "Invócala en "
     "ese turno sin decir nada más."
 )
 VOICEMAIL_DESCRIPTION = (
@@ -122,7 +135,10 @@ class ElevenLabsAdmin:
         self._http.close()
 
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
-        response = self._http.request(method, path, **kwargs)
+        try:
+            response = self._http.request(method, path, **kwargs)
+        except httpx.HTTPError as exc:
+            raise ElevenLabsError(f"{method} {path}: {type(exc).__name__}") from exc
         if response.status_code >= 400:
             detail = response.text[:1500]
             raise ElevenLabsError(f"{method} {path} → {response.status_code}: {detail}")
@@ -209,5 +225,8 @@ class ElevenLabsAdmin:
             "new_turns_limit": max_turns,
         }
         return self._request(
-            "POST", f"/v1/convai/agents/{agent_id}/simulate-conversation", json=body
+            "POST",
+            f"/v1/convai/agents/{agent_id}/simulate-conversation",
+            json=body,
+            timeout=httpx.Timeout(120.0),
         )

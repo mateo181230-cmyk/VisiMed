@@ -2,17 +2,21 @@
   "_comentario": "Configuración del agente de voz de UNO Visitas en ElevenLabs. Se aplica con `uno elevenlabs-apply`; el guion vive en prompt.es.md y los campos que se extraen en services/api/src/uno/modules/calls/schema.py. Cambiar el agente es un PR, no un clic en el panel.",
   "name": "UNO Visitas · Entrevista de visita",
   "tags": ["uno-visitas"],
-  "first_message": "Hola {{visitador_nombre}}, soy UNO. Esta llamada se graba para armar tu reporte. {{pregunta_inicial}}",
+  "first_message": "Hola {{visitador_nombre}}, soy UNO; esta llamada se graba. {{pregunta_inicial}}",
   "dynamic_variable_placeholders": {
     "visitador_nombre": "Carlos",
     "num_visitas": "1",
     "visitas_texto": "1. La visita de las 9:30 a. m. con la doctora Laura Méndez en Clínica Central (línea GASTRU).",
-    "pregunta_inicial": "¿Cómo te fue con la doctora Laura Méndez?"
+    "pregunta_inicial": "Oye, ¿tienes tiempo para hacer tu resumen o prefieres hacerlo por escrito en la app?",
+    "tipo_llamada": "summary",
+    "pregunta_relato": "Vi que terminaste tu visita con la doctora Laura Méndez. ¿Cómo te fue?",
+    "fecha_actual": "2026-09-30",
+    "zona_horaria": "America/Bogota"
   },
   "language": "es",
-  "llm": "gemini-3.5-flash-lite",
+  "llm": "gemini-3.5-flash",
   "reasoning_effort": "minimal",
-  "temperature": 0.3,
+  "temperature": 0.1,
   "max_tokens": 200,
   "tts": {
     "model_id": "eleven_v3_conversational",
@@ -44,7 +48,7 @@
     "interruption_ignore_terms": ["ajá", "aja", "mmm", "eh", "aham"]
   },
   "conversation": {
-    "max_duration_seconds": 180
+    "max_duration_seconds": 720
   },
   "privacy": {
     "record_voice": true,

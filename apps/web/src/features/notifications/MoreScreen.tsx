@@ -1,4 +1,4 @@
-import { Bell, ChevronRight, Download, ListChecks, LogOut, MapPin, Share } from 'lucide-react'
+import { Bell, Sparkles, ChevronRight, Download, History, ListChecks, LogOut, MapPin, Share } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ScreenHeader } from '../../components/ScreenHeader'
@@ -9,9 +9,20 @@ import { useInstallPrompt } from '../../pwa'
 import { APP_VERSION } from '../../sync/engine'
 import { useOutboxCounts } from '../../sync/SyncProvider'
 import { useAuth } from '../auth/AuthProvider'
+import { useToConfirmCount } from '../history/useHistory'
 import { isStandalone } from './push'
 
-function Row({ to, icon, title, detail }: { to: string; icon: React.ReactNode; title: string; detail?: React.ReactNode }) {
+function Row({
+  to,
+  icon,
+  title,
+  detail,
+}: {
+  to: string
+  icon: React.ReactNode
+  title: string
+  detail?: React.ReactNode
+}) {
   return (
     <Link to={to} className="flex min-h-16 items-center gap-3.5 px-4 py-3 active:bg-canvas">
       <span className="grid size-10 place-items-center rounded-full bg-brand-50 text-brand">{icon}</span>
@@ -27,6 +38,7 @@ export function MoreScreen() {
   const { user, signOut } = useAuth()
   const { pending, rejected, expired } = useOutboxCounts()
   const { canInstall, install } = useInstallPrompt()
+  const toConfirm = useToConfirmCount()
   const [confirmingLogout, setConfirmingLogout] = useState(false)
   const problems = rejected + expired
   const unsent = pending + problems
@@ -47,6 +59,19 @@ export function MoreScreen() {
         </Card>
 
         <Card className="divide-y divide-line overflow-hidden">
+          <Row
+            to="/historial"
+            icon={<History size={20} />}
+            title="Historial de visitas"
+            detail={
+              toConfirm > 0 ? (
+                <span className="rounded-full bg-warn-50 px-2.5 py-0.5 text-sm font-bold text-warn">
+                  {toConfirm} por confirmar
+                </span>
+              ) : undefined
+            }
+          />
+          <Row to="/inteligencia" icon={<Sparkles size={20} />} title="Recomendaciones" />
           <Row to="/mas/avisos" icon={<Bell size={20} />} title="Avisos" />
           <Row to="/mas/ubicacion" icon={<MapPin size={20} />} title="Probar ubicación" />
           <Row
@@ -68,7 +93,9 @@ export function MoreScreen() {
             </h2>
             {canInstall ? (
               <>
-                <p className="text-[15px] text-muted">Queda como un ícono en tu pantalla y abre más rápido, también sin señal.</p>
+                <p className="text-[15px] text-muted">
+                  Queda como un ícono en tu pantalla y abre más rápido, también sin señal.
+                </p>
                 <Button block onClick={() => void install()}>
                   Instalar UNO
                 </Button>
@@ -97,8 +124,8 @@ export function MoreScreen() {
         <div className="space-y-4 pt-1">
           {unsent > 0 ? (
             <Notice tone="warn">
-              Tienes <strong>{unsent}</strong> {unsent === 1 ? 'cambio' : 'cambios'} que todavía no se enviaron. Si cierras
-              sesión ahora se perderán.
+              Tienes <strong>{unsent}</strong> {unsent === 1 ? 'cambio' : 'cambios'} que todavía no se enviaron. Si
+              cierras sesión ahora se perderán.
             </Notice>
           ) : (
             <p className="text-base text-muted">Tendrás que ingresar de nuevo con tu celular y tu PIN.</p>

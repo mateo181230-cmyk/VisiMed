@@ -14,12 +14,25 @@ export type SyncOut = components['schemas']['SyncOut']
 export type SessionOut = components['schemas']['SessionOut']
 export type UserOut = components['schemas']['UserOut']
 export type Preferences = components['schemas']['PreferencesOut']
+export type PilotSnapshot = components['schemas']['PilotSnapshot']
 
 export type ApiFailure =
   | { ok: false; kind: 'network' }
   | { ok: false; kind: 'auth'; status: 401 }
-  | { ok: false; kind: 'server'; status: number; code?: string; message?: string }
-  | { ok: false; kind: 'client'; status: number; code?: string; message?: string }
+  | {
+      ok: false
+      kind: 'server'
+      status: number
+      code?: string
+      message?: string
+    }
+  | {
+      ok: false
+      kind: 'client'
+      status: number
+      code?: string
+      message?: string
+    }
 export type ApiResult<T> = { ok: true; data: T } | ApiFailure
 
 const client = createClient<paths>({ baseUrl: '' })
@@ -43,6 +56,11 @@ export function configureAuthHandlers(handlers: {
 
 function bearer(): Record<string, string> {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+}
+
+export const intelligenceApi = {
+  snapshot: (): Promise<ApiResult<PilotSnapshot>> =>
+    call(() => client.GET('/v1/intelligence/snapshot', { headers: bearer() })),
 }
 
 interface Raw<T> {
@@ -120,6 +138,22 @@ export function login(phone: string, pin: string): Promise<ApiResult<SessionOut>
   return call(() => client.POST('/v1/auth/login', { body: { phone, pin } }), false)
 }
 
+export function register(
+  full_name: string,
+  phone: string,
+  email: string,
+  pin: string,
+  invite_code: string,
+): Promise<ApiResult<SessionOut>> {
+  return call(
+    () =>
+      client.POST('/v1/auth/register', {
+        body: { full_name, phone, email, pin, invite_code },
+      }),
+    false,
+  )
+}
+
 export async function logout(): Promise<void> {
   await attempt(() => client.POST('/v1/auth/logout'))
   accessToken = null
@@ -136,11 +170,7 @@ export interface WireEvent {
   payload: Record<string, unknown>
 }
 
-export function postSync(
-  deviceId: string,
-  events: WireEvent[],
-  outboxPending: number,
-): Promise<ApiResult<SyncOut>> {
+export function postSync(deviceId: string, events: WireEvent[], outboxPending: number): Promise<ApiResult<SyncOut>> {
   return call(() =>
     client.POST('/v1/sync', {
       headers: bearer(),
@@ -182,20 +212,38 @@ export const notifications = {
 
   unsubscribe: (endpoint: string): Promise<ApiResult<Preferences>> =>
     call(() =>
-      client.POST('/v1/notifications/push/unsubscribe', { headers: bearer(), body: { endpoint } }),
+      client.POST('/v1/notifications/push/unsubscribe', {
+        headers: bearer(),
+        body: { endpoint },
+      }),
     ),
 
   registerEmail: (email: string): Promise<ApiResult<components['schemas']['EmailStartOut']>> =>
-    call(() => client.POST('/v1/notifications/email', { headers: bearer(), body: { email } })),
+    call(() =>
+      client.POST('/v1/notifications/email', {
+        headers: bearer(),
+        body: { email },
+      }),
+    ),
 
   verifyEmail: (code: string): Promise<ApiResult<Preferences>> =>
-    call(() => client.POST('/v1/notifications/email/verify', { headers: bearer(), body: { code } })),
+    call(() =>
+      client.POST('/v1/notifications/email/verify', {
+        headers: bearer(),
+        body: { code },
+      }),
+    ),
 
   removeEmail: (): Promise<ApiResult<Preferences>> =>
     call(() => client.DELETE('/v1/notifications/email', { headers: bearer() })),
 
   sendTest: (channel: 'push' | 'email' | 'all'): Promise<ApiResult<components['schemas']['TestOut']>> =>
-    call(() => client.POST('/v1/notifications/test', { headers: bearer(), body: { channel } })),
+    call(() =>
+      client.POST('/v1/notifications/test', {
+        headers: bearer(),
+        body: { channel },
+      }),
+    ),
 }
 
 // ------------------------------------------------------------------ entrenar (práctica con médico virtual)
@@ -214,7 +262,12 @@ export const training = {
     call(() => client.GET('/v1/training/overview', { headers: bearer() })),
 
   scenario: (slug: string): Promise<ApiResult<TrainingScenario>> =>
-    call(() => client.GET('/v1/training/scenarios/{slug}', { headers: bearer(), params: { path: { slug } } })),
+    call(() =>
+      client.GET('/v1/training/scenarios/{slug}', {
+        headers: bearer(),
+        params: { path: { slug } },
+      }),
+    ),
 
   submitQuiz: (slug: string, answers: Record<string, string>): Promise<ApiResult<QuizResult>> =>
     call(() =>
@@ -238,7 +291,10 @@ export const training = {
 
   attempt: (id: string): Promise<ApiResult<PracticeAttempt>> =>
     call(() =>
-      client.GET('/v1/training/attempts/{attempt_id}', { headers: bearer(), params: { path: { attempt_id: id } } }),
+      client.GET('/v1/training/attempts/{attempt_id}', {
+        headers: bearer(),
+        params: { path: { attempt_id: id } },
+      }),
     ),
 
   end: (id: string): Promise<ApiResult<PracticeAttempt>> =>

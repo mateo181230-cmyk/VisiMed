@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEV_JWT_SECRET = "dev-only-change-me-dev-only-change-me"  # noqa: S105  (solo desarrollo)
@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     argon2_parallelism: int = 4
     login_max_failures: int = 5
     login_window_minutes: int = 15
+    pilot_invite_code: str = ""  # registro de visitadores cerrado salvo piloto con código
 
     # --- zona horaria del negocio ---
     default_timezone: str = "America/Bogota"
@@ -89,8 +90,8 @@ class Settings(BaseSettings):
     elevenlabs_webhook_secret: str = ""  # secreto HMAC del webhook de fin de llamada
     # Fuera de producción solo se llama a estos celulares (lista separada por comas, E.164).
     call_allowed_phones: str = ""
-    # ¿El agente dice el nombre del médico? Pendiente de legal (Q15): por defecto no.
-    call_include_doctor_names: bool = False
+    # Identifica la visita por su médico. Puede desactivarse para usar hora e institución.
+    call_include_doctor_names: bool = True
     # SOLO DESARROLLO: todas las llamadas salen a este celular en vez de al del visitador.
     # Sirve para probar con la cuenta de demostración y que suene el teléfono de quien prueba.
     # Prohibido en producción.
@@ -99,9 +100,10 @@ class Settings(BaseSettings):
     call_window_end_hour: int = 19  # …ni desde esta
     call_closing_hour: int = 18  # a esta hora se llama con lo que haya quedado pendiente
     call_batch_wait_seconds: int = 20  # espera tras un «Terminé» por si sigue «Otro médico aquí»
+    call_max_visits_per_call: int = Field(default=1, ge=1, le=5)  # piloto: una ficha por llamada
     call_retry_minutes: str = "5,15"  # reintentos si no contesta (PRD C1)
     call_poll_seconds: int = 5
-    call_result_timeout_minutes: int = 12  # sin resultado tras este tiempo: se da por caída
+    call_result_timeout_minutes: int = 15  # incluye la llamada y el análisis del proveedor
     call_busy_visit_hours: int = 3  # una visita en curso más de estas horas no bloquea la llamada
     call_giveup_hours: int = 24  # sin entrevista pasado este plazo → «sin entrevista»
 
@@ -151,9 +153,7 @@ class Settings(BaseSettings):
 
     @property
     def call_retry_delays(self) -> list[timedelta]:
-        return [
-            timedelta(minutes=int(m)) for m in self.call_retry_minutes.split(",") if m.strip()
-        ]
+        return [timedelta(minutes=int(m)) for m in self.call_retry_minutes.split(",") if m.strip()]
 
     @property
     def is_sqlite(self) -> bool:

@@ -70,6 +70,7 @@ export interface CallInfo {
 }
 
 export interface VisitRow {
+  title?: string | null
   id: string
   doctor_id: string
   institution_id: string | null
@@ -84,6 +85,10 @@ export interface VisitRow {
   /** Hora del toque «Llegué» / «Terminé» (ISO, UTC). */
   arrived_at?: string | null
   finished_at?: string | null
+  report_notified_at?: string | null
+  report_due_at?: string | null
+  report_invalid_at?: string | null
+  report_mode?: string | null
   arrival_geo?: GeoResult | null
   finish_geo?: GeoResult | null
   call?: CallInfo | null
@@ -159,6 +164,7 @@ export class UnoDB extends Dexie {
     this.version(2)
       .stores({ reports: 'visit_id, status, updated_at' })
       .upgrade((tx) => tx.table('meta').delete('cursor'))
+    this.version(3).stores({}).upgrade((tx) => tx.table('meta').delete('cursor'))
   }
 }
 

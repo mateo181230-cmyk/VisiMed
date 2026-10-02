@@ -1,18 +1,21 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Field, Notice } from '../../components/ui'
 import { useAuth } from './AuthProvider'
 
 export function LoginScreen() {
   const { status, user, needsReauth, signIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: unknown } | null)?.from
+  const destination = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : '/'
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   if (status === 'loading') return null
-  if (status === 'authed' && !needsReauth) return <Navigate to="/" replace />
+  if (status === 'authed' && !needsReauth) return <Navigate to={destination} replace />
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault()
@@ -24,7 +27,7 @@ export function LoginScreen() {
       setError(message)
       setPin('')
     } else {
-      navigate('/', { replace: true })
+      navigate(destination, { replace: true })
     }
   }
 
@@ -70,8 +73,9 @@ export function LoginScreen() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        ¿No tienes usuario o olvidaste tu PIN? Pídeselo a tu administrador.
+        ¿No tienes usuario? <Link to="/registro" className="font-semibold text-brand">Crear cuenta</Link>
       </p>
+      <p className="mt-2 text-center text-sm text-muted">Si olvidaste tu PIN, pídeselo a tu administrador.</p>
     </main>
   )
 }

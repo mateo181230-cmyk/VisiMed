@@ -43,7 +43,6 @@ async def run_calls_forever(ctx: AppContext, stop: asyncio.Event) -> None:
     interval = ctx.settings.call_poll_seconds
     if ctx.settings.call_backend == "off":
         log.info("llamadas apagadas (UNO_CALL_BACKEND=off)")
-        return
     log.info(
         "orquestador de llamadas iniciado (%s, cada %s s)", ctx.settings.call_backend, interval
     )

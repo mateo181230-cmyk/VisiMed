@@ -1,63 +1,11 @@
-import clsx from 'clsx'
-import { CalendarDays, Ellipsis, GraduationCap, History, House, RefreshCw } from 'lucide-react'
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom'
+import { RefreshCw } from 'lucide-react'
+import { Outlet, Link } from 'react-router-dom'
+import { BottomNav } from '../components/BottomNav'
 import { Button } from '../components/ui'
 import { usePwaUpdate } from '../pwa'
 import { useOutboxCounts } from '../sync/SyncProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { RequireLocation } from '../features/geo/LocationGate'
-import { useToConfirmCount } from '../features/history/useHistory'
-
-const ITEMS = [
-  { to: '/', label: 'Hoy', icon: House, end: true },
-  { to: '/agenda', label: 'Agenda', icon: CalendarDays, end: false },
-  { to: '/historial', label: 'Historial', icon: History, end: false },
-  { to: '/entrenar', label: 'Entrenar', icon: GraduationCap, end: false },
-  { to: '/mas', label: 'Más', icon: Ellipsis, end: false },
-] as const
-
-function BottomNav() {
-  const { pathname } = useLocation()
-  const toConfirm = useToConfirmCount()
-  return (
-    <nav
-      aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur"
-    >
-      <ul className="mx-auto grid max-w-[480px] grid-cols-5 pb-[var(--safe-bottom)]">
-        {ITEMS.map(({ to, label, icon: Icon, end }) => {
-          const active = end ? pathname === to : pathname.startsWith(to)
-          return (
-            <li key={to}>
-              <NavLink
-                to={to}
-                end={end}
-                aria-current={active ? 'page' : undefined}
-                className={clsx(
-                  'flex min-h-[68px] flex-col items-center justify-center gap-1 text-[13px] font-semibold',
-                  active ? 'text-brand' : 'text-muted',
-                )}
-              >
-                <span className="relative">
-                  <Icon size={26} strokeWidth={active ? 2.5 : 2} aria-hidden />
-                  {to === '/historial' && toConfirm > 0 && (
-                    <span
-                      aria-label={`${toConfirm} por confirmar`}
-                      className="absolute -top-1.5 -right-2.5 grid min-w-[18px] place-items-center rounded-full bg-danger px-1 text-[11px] leading-[18px] font-bold text-white"
-                    >
-                      {toConfirm}
-                    </span>
-                  )}
-                </span>
-                {label}
-              </NavLink>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
-  )
-}
 
 function Banners() {
   const { needsReauth } = useAuth()
@@ -104,7 +52,7 @@ function LogoutWhenBlocked() {
 }
 
 /**
- * Marco de las pantallas del visitador: contenido + barra inferior (Hoy · Agenda · Historial · Entrenar · Más).
+ * Marco de las pantallas del visitador: contenido + barra inferior; Inteligencia tiene su propio marco.
  * Sin permiso de ubicación solo se ve la pantalla que lo pide (`RequireLocation`).
  */
 export function Shell() {

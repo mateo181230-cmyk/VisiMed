@@ -23,11 +23,15 @@ router = APIRouter(prefix="/v1/notifications", tags=["notifications"])
 
 class PreferencesOut(BaseModel):
     push_enabled: bool
+    push_delivery_available: bool
     email_enabled: bool
+    email_delivery_available: bool
     email: str | None
     email_verified: bool
     pending_email: str | None
     remind_before_min: int
+    call_remind_before_min: int = 5
+    call_delivery_available: bool = False
     remind_options: list[int]
     digest_enabled: bool
     digest_time: str
@@ -40,6 +44,7 @@ class PreferencesIn(BaseModel):
     push_enabled: bool | None = None
     email_enabled: bool | None = None
     remind_before_min: int | None = None
+    call_remind_before_min: int | None = None
     digest_enabled: bool | None = None
     digest_time: str | None = Field(default=None, max_length=5)
 
@@ -52,11 +57,15 @@ async def _prefs_out(session: AsyncSession, ctx: AppContext, user: User) -> Pref
     pending = await service.pending_email(session, user.id, now)
     return PreferencesOut(
         push_enabled=prefs.push_enabled,
+        push_delivery_available=ctx.settings.push_backend != "log",
         email_enabled=prefs.email_enabled,
+        email_delivery_available=ctx.settings.email_backend != "file",
         email=prefs.email,
         email_verified=prefs.email_verified_at is not None,
         pending_email=pending,
         remind_before_min=prefs.remind_before_min,
+        call_remind_before_min=prefs.call_remind_before_min,
+        call_delivery_available=ctx.settings.call_backend == "elevenlabs",
         remind_options=list(REMIND_OPTIONS),
         digest_enabled=prefs.digest_enabled,
         digest_time=prefs.digest_time,
@@ -225,5 +234,13 @@ async def send_test(
         url="/",
         tag="test",
     )
-    results = await deliver(ctx, user.id, notice, now, channels=channels, force=True)
+    unavailable = {
+        channel: "unavailable"
+        for channel in channels
+        if (channel == "push" and ctx.settings.push_backend == "log")
+        or (channel == "email" and ctx.settings.email_backend == "file")
+    }
+    enabled_channels = tuple(channel for channel in channels if channel not in unavailable)
+    results = await deliver(ctx, user.id, notice, now, channels=enabled_channels, force=True)
+    results.update(unavailable)
     return TestOut(results=results)

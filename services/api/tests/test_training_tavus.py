@@ -28,7 +28,8 @@ from .conftest import Env
 class FakeTavus:
     """Tavus en memoria: registra lo que recibe y responde como la API real."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, pal_id_prefix: str = "") -> None:
+        self.pal_id_prefix = pal_id_prefix
         self.calls: list[tuple[str, str, dict[str, Any] | None]] = []
         self.pals: dict[str, dict[str, Any]] = {
             "p_ajeno": {"pal_id": "p_ajeno", "pal_name": "Feria Jetour · Gloria"},
@@ -49,7 +50,7 @@ class FakeTavus:
                 json={"conversation_id": "c123", "conversation_url": "https://tavus.daily.co/c123"},
             )
         if request.method == "POST" and path == "/v2/pals":
-            pal_id = f"p{len(self.pals)}"
+            pal_id = f"{self.pal_id_prefix}p{len(self.pals)}"
             # Como la API real: quita puntos, guiones y paréntesis del nombre («Dr.» → «Dr»).
             name = re.sub(r"[.()\-]", "", body["pal_name"])  # type: ignore[index]
             self.pals[pal_id] = {"pal_id": pal_id, "pal_name": name}
@@ -250,3 +251,30 @@ async def test_apply_publishes_once_and_is_idempotent(make_env) -> None:  # type
         again = await pal.apply(other.ctx, say=lambda _: None)
         assert all(v.startswith("reutilizado v1") for v in again.values()), again
         assert len([c for c in tavus.calls if c[:2] == ("POST", "/v2/pals")]) == 4
+
+
+async def test_apply_republishes_when_the_api_key_belongs_to_another_account(make_env) -> None:  # type: ignore[no-untyped-def]
+    original = FakeTavus()
+    replacement = FakeTavus(pal_id_prefix="new_account_")
+    async with make_env(conversation_provider=original.provider()) as env:
+        env: Env
+        await pal.apply(env.ctx, say=lambda _: None)
+        original_ids = set(original.pals)
+
+        env.ctx.conversation_provider = replacement.provider()
+        outcome = await pal.apply(env.ctx, say=lambda _: None)
+        assert all(v.startswith("publicado v2") for v in outcome.values()), outcome
+        async with env.ctx.sessionmaker() as session:
+            versions = (await session.execute(select(TrainingScenarioVersion))).scalars().all()
+        retired = [v for v in versions if v.retired_at is not None]
+        current = [v for v in versions if v.retired_at is None]
+        assert len(retired) == len(current) == 4
+        assert all(v.version == 1 and v.tavus_pal_id in original_ids for v in retired)
+        assert all(v.version == 2 and v.tavus_pal_id in replacement.pals for v in current)
+        assert all(v.tavus_pal_id not in original_ids for v in current)
+        assert set(original.pals) == original_ids  # no borra médicos de la cuenta anterior
+
+        again = await pal.apply(env.ctx, say=lambda _: None)
+        assert all(v.startswith("igual") for v in again.values()), again
+        assert len([c for c in replacement.calls if c[:2] == ("POST", "/v2/pals")]) == 4
+        assert "p_ajeno" in replacement.pals

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ToastProvider } from '../../components/Toast'
 import { db } from '../../db/db'
 import type { DoctorRow, InstitutionRow, LineRow, VisitRow } from '../../db/db'
@@ -59,8 +59,13 @@ function renderSheet(a: Agenda = agenda(), day = '2026-09-30') {
 }
 
 beforeEach(async () => {
+  // La visita de mañana debe ofrecer las mismas horas sin depender del día ni del reloj real.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-29T12:00:00Z'))
   await db.outbox.clear()
 })
+
+afterEach(() => vi.useRealTimers())
 
 describe('Agendar una visita (doc 02 T3.2)', () => {
   it('con un médico existente son 3 toques: médico → hora → Guardar', async () => {

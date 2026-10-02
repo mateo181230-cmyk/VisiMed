@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from uno.db import Base, UTCDateTime
 from uno.ids import uuid7
 
-REMIND_OPTIONS = (0, 10, 15, 30, 45, 60, 120)  # minutos antes; 0 = sin recordatorio de visita
+REMIND_OPTIONS = (0, 5, 10, 15, 30, 45, 60, 120)  # minutos antes; 0 = sin recordatorio
 CHANNELS = ("push", "email")
 KINDS = ("visit_reminder", "daily_digest", "test")
 
@@ -27,6 +27,7 @@ class NotificationPreference(Base):
     email: Mapped[str | None] = mapped_column(String(254), default=None)
     email_verified_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     remind_before_min: Mapped[int] = mapped_column(default=30)
+    call_remind_before_min: Mapped[int] = mapped_column(default=5)
     digest_enabled: Mapped[bool] = mapped_column(default=True)
     digest_time: Mapped[str] = mapped_column(String(5), default="07:30")  # HH:MM hora local
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)

@@ -1,7 +1,9 @@
 import clsx from 'clsx'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ScreenHeader } from '../../components/ScreenHeader'
+import { ProfileLink } from '../../components/ProfileLink'
 import { SyncPill } from '../../components/SyncPill'
 import { Button, Card, Skeleton } from '../../components/ui'
 import {
@@ -41,10 +43,26 @@ export function WeekScreen() {
       <ScreenHeader
         title="Agenda"
         subtitle={`${monthName(monday).replace(/^./, (c) => c.toUpperCase())} ${monday.slice(0, 4)}`}
-        right={<SyncPill />}
+        right={
+          <>
+            <SyncPill />
+            <ProfileLink />
+          </>
+        }
       />
 
       <div className="space-y-5 px-5 pb-6">
+        <Link
+          to="/inteligencia"
+          className="flex items-center gap-3 rounded-control border border-brand/15 bg-brand-50 px-4 py-3"
+        >
+          <Sparkles size={20} className="shrink-0 text-brand" />
+          <span className="flex-1">
+            <strong className="block text-sm text-navy">Tu próxima visita sugerida</strong>
+            <span className="block text-xs text-muted">Ver recomendaciones</span>
+          </span>
+          <ChevronRight size={17} className="text-brand" />
+        </Link>
         <nav aria-label="Semana" className="flex items-center gap-1">
           <button
             type="button"
