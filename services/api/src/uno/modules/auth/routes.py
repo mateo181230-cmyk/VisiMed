@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from secrets import compare_digest
 
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
@@ -14,9 +13,10 @@ from uno import clock
 from uno.context import AppContext
 from uno.deps import get_ctx, get_current_user, get_session
 from uno.errors import ApiError
-from uno.modules.auth import service
+from uno.modules.auth import service, throttle
 from uno.modules.auth.models import User
 from uno.modules.notifications import service as notifications
+from uno.security import constant_time_equals
 
 router = APIRouter(tags=["auth"])
 
@@ -111,7 +111,15 @@ async def register(
     ctx: AppContext = Depends(get_ctx),
 ) -> SessionOut:
     code = ctx.settings.pilot_invite_code
-    if not code or not compare_digest(body.invite_code, code):
+    await throttle.reserve(
+        session,
+        ctx.settings,
+        purpose="register",
+        phone=service.valid_phone(body.phone),
+        ip=_client_ip(request),
+        now=clock.now(),
+    )
+    if not code or not constant_time_equals(body.invite_code, code):
         raise ApiError(403, "invalid_invite", "El código de invitación no es válido")
     email = notifications.normalize_email(body.email)
     name = body.full_name.strip()

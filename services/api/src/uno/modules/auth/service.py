@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, select, update
+from anyio import CapacityLimiter, to_thread
+from anyio.lowlevel import RunVar
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from uno.config import Settings
 from uno.errors import ApiError, unauthorized
 from uno.ids import uuid7
-from uno.modules.auth.models import LoginAttempt, RefreshToken, User
+from uno.modules.auth import throttle
+from uno.modules.auth.models import RefreshToken, User
 from uno.security import (
     AccessToken,
     create_access_token,
@@ -27,8 +31,30 @@ from uno.security import (
     verify_pin,
 )
 
-IP_MAX_FAILURES = 20
 REFRESH_REUSE_GRACE = timedelta(seconds=10)  # tolerancia a dos refrescos casi simultáneos
+_PIN_LIMITER = RunVar[CapacityLimiter]("auth_pin_limiter")
+
+
+async def _pin_work[T](fn: Callable[..., T], *args: object) -> T:
+    # 4 × 64 MiB por proceso con los parámetros de producción, fuera del event loop.
+    try:
+        limiter = _PIN_LIMITER.get()
+    except LookupError:
+        limiter = CapacityLimiter(4)
+        _PIN_LIMITER.set(limiter)
+    return await to_thread.run_sync(fn, *args, limiter=limiter)
+
+
+def valid_phone(raw: str) -> str:
+    phone = normalize_phone(raw)
+    if not phone.isascii() or not is_valid_phone(phone):
+        raise ApiError(422, "invalid_phone", "El celular debe ir en formato +573001234567")
+    return phone
+
+
+def _validate_pin(pin: str) -> None:
+    if len(pin) != 6 or not pin.isascii() or not is_valid_pin(pin):
+        raise ApiError(422, "invalid_pin", "El PIN debe tener 6 dígitos")
 
 
 @dataclass(frozen=True)
@@ -49,16 +75,16 @@ async def create_user(
     now: datetime,
     timezone: str | None = None,
 ) -> User:
-    phone = normalize_phone(phone)
-    if not is_valid_phone(phone):
-        raise ApiError(422, "invalid_phone", "El celular debe ir en formato +573001234567")
-    if not is_valid_pin(pin):
-        raise ApiError(422, "invalid_pin", "El PIN debe tener 6 dígitos")
+    phone = valid_phone(phone)
+    _validate_pin(pin)
+    full_name = full_name.strip()
+    if not 2 <= len(full_name) <= 120:
+        raise ApiError(422, "invalid_name", "El nombre debe tener entre 2 y 120 caracteres")
     user = User(
         id=uuid7(),
-        full_name=full_name.strip(),
+        full_name=full_name,
         phone_e164=phone,
-        pin_hash=hash_pin(settings, pin),
+        pin_hash=await _pin_work(hash_pin, settings, pin),
         role=role,
         timezone=timezone or settings.default_timezone,
         created_at=now,
@@ -72,45 +98,6 @@ async def create_user(
     return user
 
 
-async def _recent_failures(
-    session: AsyncSession, *, phone: str, ip: str, window_start: datetime
-) -> tuple[int, int]:
-    """Fallos desde el último ingreso exitoso (o el inicio de la ventana) por celular y por IP."""
-    last_ok = (
-        await session.execute(
-            select(func.max(LoginAttempt.at)).where(
-                LoginAttempt.phone == phone, LoginAttempt.success.is_(True)
-            )
-        )
-    ).scalar()
-    since = max(window_start, last_ok) if last_ok else window_start
-    by_phone = (
-        await session.execute(
-            select(func.count())
-            .select_from(LoginAttempt)
-            .where(
-                LoginAttempt.phone == phone,
-                LoginAttempt.success.is_(False),
-                LoginAttempt.at > since,
-            )
-        )
-    ).scalar_one()
-    by_ip = 0
-    if ip:
-        by_ip = (
-            await session.execute(
-                select(func.count())
-                .select_from(LoginAttempt)
-                .where(
-                    LoginAttempt.ip == ip,
-                    LoginAttempt.success.is_(False),
-                    LoginAttempt.at > window_start,
-                )
-            )
-        ).scalar_one()
-    return int(by_phone), int(by_ip)
-
-
 async def login(
     session: AsyncSession,
     settings: Settings,
@@ -121,27 +108,22 @@ async def login(
     user_agent: str | None,
     now: datetime,
 ) -> Session:
-    phone = normalize_phone(phone)
-    window = timedelta(minutes=settings.login_window_minutes)
-    by_phone, by_ip = await _recent_failures(session, phone=phone, ip=ip, window_start=now - window)
-    if by_phone >= settings.login_max_failures or by_ip >= IP_MAX_FAILURES:
-        raise ApiError(
-            429,
-            "too_many_attempts",
-            "Demasiados intentos. Espera unos minutos e inténtalo de nuevo",
-            {"Retry-After": str(int(window.total_seconds()))},
-        )
+    phone = valid_phone(phone)
+    _validate_pin(pin)
+    attempt = await throttle.reserve(
+        session, settings, purpose="login", phone=phone, ip=ip, now=now
+    )
 
     user = (
         await session.execute(select(User).where(User.phone_e164 == phone))
     ).scalar_one_or_none()
     ok = False
     if user is not None and user.is_active:
-        ok = verify_pin(settings, user.pin_hash, pin)
+        ok = await _pin_work(verify_pin, settings, user.pin_hash, pin)
     else:
-        dummy_verify(settings, pin)
+        await _pin_work(dummy_verify, settings, pin)
 
-    session.add(LoginAttempt(phone=phone, ip=ip, at=now, success=ok))
+    await throttle.finish_login(session, attempt, success=ok, now=now)
     if not ok or user is None:
         await session.commit()
         raise unauthorized("Celular o PIN incorrectos")

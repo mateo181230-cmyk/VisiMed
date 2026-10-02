@@ -5,4 +5,16 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh /opt/uno-visitas/current/infra/backup.sh
+ExecStart=/bin/sh /usr/local/libexec/uno-visitas/backup.sh
+Environment=UNO_BACKUP_ENV_FILE=/etc/uno-visitas/backup.env
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/opt/uno-visitas/backups /var/cache/uno-visitas-restic
+RestrictSUIDSGID=true
+LockPersonality=true
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h

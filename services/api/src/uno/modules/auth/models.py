@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Uuid
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Uuid, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from uno.db import Base, UTCDateTime
@@ -47,16 +47,31 @@ class RefreshToken(Base):
 
 
 class LoginAttempt(Base):
-    """Intentos de ingreso, para bloquear la fuerza bruta (5 fallos en 15 min)."""
+    """Reservas de ingreso/registro; los ingresos en curso ya consumen el límite."""
 
     __tablename__ = "login_attempt"
-    __table_args__ = (Index("ix_login_attempt_phone_at", "phone", "at"),)
+    __table_args__ = (
+        Index("ix_login_attempt_phone_at", "phone", "at"),
+        Index("ix_login_attempt_purpose_ip_at", "purpose", "ip", "at"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid7)
     phone: Mapped[str] = mapped_column(String(20))
     ip: Mapped[str] = mapped_column(String(64), default="")
     at: Mapped[datetime] = mapped_column(UTCDateTime)
     success: Mapped[bool]
+    purpose: Mapped[str] = mapped_column(String(12), default="login", server_default="login")
+    finished: Mapped[bool] = mapped_column(default=True, server_default=true())
+    counts_for_phone: Mapped[bool] = mapped_column(default=True, server_default=true())
+
+
+class AuthAttemptLock(Base):
+    """Guardas de transacción compartidas por procesos; nunca contienen credenciales."""
+
+    __tablename__ = "auth_attempt_lock"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    touched_at: Mapped[datetime] = mapped_column(UTCDateTime, index=True)
 
 
 class Device(Base):

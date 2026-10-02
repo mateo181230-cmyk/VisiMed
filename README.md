@@ -4,6 +4,9 @@ PWA para visitadores médicos: agenda propia, «Llegué / Terminé», llamada de
 
 Los documentos de diseño están en [`../Plan UNO Visitas`](../Plan%20UNO%20Visitas) (arquitectura 01, plan de trabajo 02, inteligencia y ML 03, práctica con médico virtual 04). Este repositorio es la construcción de ese plan.
 
+Correcciones del 2 de octubre: [alcance, pruebas y aplicación operativa](docs/operaciones/validacion-2026-10-02.md).
+Los [respaldos externos](docs/operaciones/respaldos.md) quedan preparados y requieren configurar su destino antes de activarlos.
+
 ## Estado (30 de septiembre de 2026)
 
 | Módulo | Qué hace | Estado |

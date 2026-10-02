@@ -3,7 +3,7 @@
 from uno.db import Base, ChangeCounter
 from uno.events import DomainEvent
 from uno.modules.agenda.models import Visit, VisitLine
-from uno.modules.auth.models import Device, LoginAttempt, RefreshToken, User
+from uno.modules.auth.models import AuthAttemptLock, Device, LoginAttempt, RefreshToken, User
 from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.catalog.models import Doctor, Institution, Panel, Product, ProductLine
 from uno.modules.notifications.models import (
@@ -23,6 +23,7 @@ from uno.modules.training.models import (
 )
 
 __all__ = [
+    "AuthAttemptLock",
     "Base",
     "Call",
     "CallVisit",
