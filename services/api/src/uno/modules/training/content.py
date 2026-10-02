@@ -27,8 +27,14 @@ COMPETENCY_IDS = (
     "manejo_objeciones",
     "cierre",
 )
-Difficulty = Literal["intermedio", "medio_alto", "alto"]
-DIFFICULTY_LABEL = {"intermedio": "Intermedio", "medio_alto": "Medio-alto", "alto": "Alto"}
+Difficulty = Literal["basico", "facil", "intermedio", "medio_alto", "alto"]
+DIFFICULTY_LABEL = {
+    "basico": "Básico",
+    "facil": "Fácil",
+    "intermedio": "Intermedio",
+    "medio_alto": "Medio-alto",
+    "alto": "Alto",
+}
 
 
 class Doctor(BaseModel):
@@ -114,6 +120,16 @@ class Flow(BaseModel):
     idle_engagement: Literal["off", "patient", "eager"]
 
 
+class Challenge(BaseModel):
+    """La resistencia se define por escenario; no se hereda del médico más exigente."""
+
+    max_objections: int = Field(ge=0, le=3)
+    requires_evidence: bool
+    pressure_questions: list[str]
+    time_rules: list[str] = Field(min_length=1)
+    success_criterion: str
+
+
 class Scenario(BaseModel):
     slug: str
     order: int
@@ -136,6 +152,7 @@ class Scenario(BaseModel):
     greetings: list[str] = Field(min_length=1)
     expected_close: str
     bot_behavior: list[str] = Field(min_length=1)
+    challenge: Challenge
     lesson: Lesson
     quiz: list[QuizQuestion] = Field(min_length=2)
     approval: Approval

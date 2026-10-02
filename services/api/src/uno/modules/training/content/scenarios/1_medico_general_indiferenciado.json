@@ -2,103 +2,143 @@
   "slug": "medico_general_indiferenciado",
   "order": 1,
   "product": "ESOMED",
-  "segment": "Médico general indiferenciado en IBP",
-  "title": "Explorar antes de presentar",
-  "skill": "Sondeo y escucha",
-  "promise": "Descubrir cómo prescribe el médico antes de hablar de ESOMED.",
-  "instruction": "Tu meta no es vender de inmediato. Haz preguntas, identifica el criterio de prescripción y confirma lo que entendiste.",
-  "difficulty": "intermedio",
+  "segment": "Médico general muy receptivo",
+  "title": "Una primera visita sencilla",
+  "skill": "Presentación breve y cierre",
+  "promise": "Ganar confianza con un médico que escucha y acepta una idea sencilla.",
+  "instruction": "Saluda, presenta ESOMED como esomeprazol para un perfil de paciente y deja una idea breve. El médico está dispuesto a escucharte; no necesitas estudios ni resolver objeciones.",
+  "difficulty": "basico",
   "doctor": {
     "name": "Dr. Andrés Gómez",
     "gender": "M",
     "specialty": "Medicina General",
     "years": 12,
-    "personality": "pragmático",
+    "personality": "cálido, colaborador y muy receptivo",
     "patients_per_day": "25-30",
-    "minutes": 3
+    "minutes": 2
   },
   "current_molecule": "Cualquier IBP / sin preferencia clara",
-  "opening_level": "medio",
+  "opening_level": "muy_alto",
   "barrier": {
     "code": "indiferenciacion_categoria",
-    "text": "Percibe que todos los IBP son muy parecidos entre sí."
+    "text": "No tiene una preferencia fija y está abierto a conocer una opción con una explicación sencilla."
   },
-  "objective": "Lograr recordación y diferenciación simple",
+  "objective": "Presentar el producto y conseguir una señal de consideración",
   "main_argument": "ESOMED como opción concreta de esomeprazol para pacientes con reflujo y dispepsia",
   "secondary_argument": "Tecnología Hüttling como refuerzo diferencial",
-  "base_objection": "La verdad uso el que tenga disponible",
+  "base_objection": "No tengo una preferencia fija; estoy abierto a conocerlo.",
   "objections": [
-    "La verdad, normalmente uso el que tenga disponible.",
-    "Al final todos los IBP son bastante parecidos.",
-    "No tengo una preferencia particular por alguno.",
-    "Eso lo manejo con cualquier IBP.",
-    "Sí, pero dígame puntualmente qué tendría de diferente."
+    "No tengo una preferencia fija; estoy abierto a conocerlo.",
+    "Veo pacientes con reflujo y me interesa conocer opciones."
   ],
   "greetings": [
-    "Sí, {trato}, cuénteme, pero breve por favor.",
-    "Lo escucho, pero breve por favor.",
-    "Sí, cuénteme, tengo un momento.",
-    "Dígame puntualmente."
+    "Buenos días, {trato}. Qué gusto saludarle, cuénteme.",
+    "Hola, bienvenido. Lo escucho con gusto.",
+    "Buenos días. Claro, cuénteme sobre ESOMED."
   ],
   "expected_close": "Recordación de ESOMED para los pacientes con reflujo y dispepsia que ve a diario",
   "bot_behavior": [
-    "Este es el nivel de entrada. Mantén una exigencia moderada y permite que el visitador corrija el rumbo una vez.",
-    "Si formula una primera pregunta útil, responde que rotas por disponibilidad; solo revela el motivo de practicidad si profundiza.",
-    "Presenta una objeción principal sobre la similitud de los IBP. No encadenes preguntas de alta presión.",
-    "Una señal positiva requiere que haya explorado, parafraseado y dejado una idea sencilla y recordable."
+    "Eres el médico más fácil del recorrido: escucha con interés y responde de forma afirmativa y cálida a las propuestas prudentes.",
+    "No presentes objeciones ni pidas estudios, comparaciones, tecnología ni una exploración profunda. No exijas parafraseo para seguir conversando.",
+    "Puedes contar espontáneamente que ves pacientes con reflujo y no tienes una marca fija. No hagas que el visitador tenga que desbloquear esa información.",
+    "Con muy poca información correcta —ESOMED es esomeprazol y una opción para pacientes con reflujo— ya estás de su lado. Di: «Sí, claro, lo tendré presente para esos pacientes».",
+    "Si falta un dato esencial, haz una pregunta amable y permite corregir. No conviertas esa ayuda en una objeción ni añadas requisitos.",
+    "Acepta una síntesis corta sin pedir otro argumento. Tu aceptación es consideración del producto, sin prometer prescripción ni validar afirmaciones exageradas."
   ],
   "lesson": {
-    "title": "La visita comienza entendiendo, no presentando",
-    "intro": "Antes de hablar de ESOMED necesitas descubrir cómo toma decisiones el médico. El objetivo es sostener una conversación breve que convierta una respuesta general en una necesidad concreta.",
+    "title": "Empezar con confianza",
+    "intro": "Este primer médico es muy receptivo. Practica una presentación sencilla y correcta; la exploración y las objeciones se incorporan en los niveles siguientes.",
     "blocks": [
-      { "title": "Abre con una pregunta útil", "text": "Reconoce el tiempo disponible y pregunta cómo decide qué IBP formular. Evita iniciar con atributos, tecnología o beneficios del producto." },
-      { "title": "Profundiza una vez", "text": "Si responde que usa el producto disponible, pregunta qué pesa más: experiencia, disponibilidad, presentación, costumbre o perfil del paciente." },
-      { "title": "Confirma lo que entendiste", "text": "Parafrasea su conducta antes de argumentar. Una frase como «entiendo que usa la categoría por practicidad, sin una preferencia fija» demuestra escucha y organiza la necesidad." },
-      { "title": "Deja una idea recordable", "text": "Ubica ESOMED como una opción concreta de esomeprazol para pacientes con reflujo o dispepsia. Busca recordación, no una promesa inmediata de prescripción." }
+      {
+        "title": "Saluda con naturalidad",
+        "text": "Abre con un saludo breve y pide un momento para presentar el producto."
+      },
+      {
+        "title": "Presenta una idea correcta",
+        "text": "Nombra ESOMED y su principio activo, esomeprazol. Ubícalo como opción para pacientes con reflujo o dispepsia, sin prometer superioridad."
+      },
+      {
+        "title": "Cierra sin complicarlo",
+        "text": "Deja una frase recordable y agradece. El médico no exigirá estudios ni argumentos técnicos en este nivel."
+      }
     ],
-    "example": "Doctor, ¿cómo suele definir cuál IBP formular? → ¿Qué pesa más en esa decisión? → Entiendo: lo elige principalmente por practicidad.",
+    "example": "Buenos días, doctor. Quisiera dejarle presente ESOMED, esomeprazol, como una opción para sus pacientes con reflujo. Para resumir, recuerde ESOMED para ese perfil. Gracias por su tiempo.",
     "avoid": [
-      "Nombrar ESOMED antes de explorar.",
-      "Aceptar la primera respuesta sin profundizar.",
-      "Confundir parafrasear con repetir exactamente las palabras del médico."
+      "Inventar cifras o prometer superioridad.",
+      "Confundir una señal de interés con una promesa de formulación.",
+      "Alargar la visita cuando el médico ya mostró apertura."
     ],
-    "sources": ["Flujo de visita esperado, pasos 1 a 3", "Perfil y Mensaje §6–§8", "Mensajes clave y respuestas §5"]
+    "sources": [
+      "Flujo de visita esperado, pasos 1 a 3",
+      "Perfil y Mensaje §6–§8",
+      "Mensajes clave y respuestas §5"
+    ]
   },
   "quiz": [
     {
       "id": "l1_apertura",
       "skill": "apertura",
-      "question": "¿Cuál es la mejor forma de iniciar esta visita?",
+      "question": "¿Qué necesitas practicar en este primer nivel?",
       "options": [
-        { "id": "a", "text": "Presentar inmediatamente las ventajas de ESOMED." },
-        { "id": "b", "text": "Preguntar cómo decide actualmente qué IBP formular.", "correct": true },
-        { "id": "c", "text": "Explicar qué es un IBP antes de hacer preguntas." }
+        {
+          "id": "a",
+          "text": "Presentar todos los estudios del producto."
+        },
+        {
+          "id": "b",
+          "text": "Saludar y presentar una idea breve y correcta de ESOMED.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Conseguir que cambie todas sus fórmulas."
+        }
       ],
-      "explanation": "Primero necesitas comprender la práctica del médico. Presentar el producto antes de explorar impide adaptar el mensaje.",
+      "explanation": "El nivel de entrada busca una presentación sencilla y prudente ante un médico receptivo.",
       "source": "Flujo de visita esperado, paso 1"
     },
     {
       "id": "l1_profundiza",
-      "skill": "sondeo",
-      "question": "El médico dice: «Uso el que tenga disponible». ¿Qué haces después?",
+      "skill": "argumentacion",
+      "question": "¿Cuál información basta para presentar ESOMED de forma sencilla?",
       "options": [
-        { "id": "a", "text": "Nombrar la tecnología Hüttling para llamar su atención." },
-        { "id": "b", "text": "Preguntar qué pesa más: disponibilidad, experiencia, presentación o costumbre.", "correct": true },
-        { "id": "c", "text": "Concluir que no conoce las diferencias entre moléculas." }
+        {
+          "id": "a",
+          "text": "Es excelente y sirve para todo."
+        },
+        {
+          "id": "b",
+          "text": "Es esomeprazol y una opción para pacientes con reflujo o dispepsia.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Es superior a todos los IBP."
+        }
       ],
-      "explanation": "Una segunda pregunta identifica la razón detrás de la conducta; no basta con registrar que rota productos.",
+      "explanation": "Nombra el principio activo y un perfil de paciente, sin añadir cifras ni superioridades.",
       "source": "Flujo de visita esperado, paso 2 · Mensajes clave §5"
     },
     {
       "id": "l1_parafraseo",
-      "skill": "parafraseo",
-      "question": "¿Cuál respuesta demuestra escucha activa?",
+      "skill": "cierre",
+      "question": "El médico dice «Sí, lo tendré presente». ¿Qué haces?",
       "options": [
-        { "id": "a", "text": "«Perfecto, entonces le presento ESOMED»." },
-        { "id": "b", "text": "«Entiendo: usa la categoría por practicidad, sin una preferencia fija».", "correct": true },
-        { "id": "c", "text": "«Todos los médicos me dicen lo mismo»." }
+        {
+          "id": "a",
+          "text": "Exigir que prometa formularlo desde hoy."
+        },
+        {
+          "id": "b",
+          "text": "Agradecer y cerrar con una idea breve.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Seguir añadiendo estudios hasta que aparezca una objeción."
+        }
       ],
-      "explanation": "Parafrasear confirma la necesidad y crea una transición natural hacia el argumento.",
+      "explanation": "La consideración del producto es un avance suficiente en esta práctica.",
       "source": "Flujo de visita esperado, paso 3 · Guion modelo §8"
     },
     {
@@ -106,26 +146,61 @@
       "skill": "cierre",
       "question": "¿Qué cierre corresponde a este perfil?",
       "options": [
-        { "id": "a", "text": "Pedirle que cambie todas sus fórmulas desde hoy." },
-        { "id": "b", "text": "Dejar a ESOMED como opción recordable en pacientes con reflujo y dispepsia.", "correct": true },
-        { "id": "c", "text": "Repetir todo el argumento técnico." }
+        {
+          "id": "a",
+          "text": "Pedirle que cambie todas sus fórmulas desde hoy."
+        },
+        {
+          "id": "b",
+          "text": "Dejar a ESOMED como opción recordable en pacientes con reflujo y dispepsia.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Repetir todo el argumento técnico."
+        }
       ],
       "explanation": "El resultado realista es recordación en un perfil de paciente, no una promesa inmediata de prescripción.",
       "source": "Flujo de visita esperado, paso 6 · Guion modelo §14"
     }
   ],
   "approval": {
-    "min_total": 18,
-    "min_competencies": { "sondeo": 4 },
-    "blocking_errors": ["promociona_sin_explorar", "no_identifica_prescripcion"]
+    "min_total": 8,
+    "min_competencies": {
+      "apertura": 1,
+      "argumentacion": 3,
+      "cierre": 3
+    },
+    "blocking_errors": [
+      "exagera_beneficios",
+      "no_resalta_principio_activo"
+    ]
   },
   "casting": {
-    "face_id": "r621a6013477",
-    "face_name": "Raj · Doctor",
+    "face_id": "r3f4182ef554",
+    "face_name": "Lucas - Studio · Pro",
     "voice_id": "57D8YIbQSuE3REDPO6Vm",
     "voice_name": "Horacio",
     "tts_model": "eleven_turbo_v2_5"
   },
-  "flow": { "turn_taking_patience": "low", "pal_interruptibility": "medium", "idle_engagement": "eager" },
-  "sources": ["Tabla maestra de segmentación", "Variables del escenario para app", "Guion modelo de simulación", "Diálogo modelo de prueba"]
+  "flow": {
+    "turn_taking_patience": "high",
+    "pal_interruptibility": "high",
+    "idle_engagement": "off"
+  },
+  "sources": [
+    "Tabla maestra de segmentación",
+    "Variables del escenario para app",
+    "Guion modelo de simulación",
+    "Diálogo modelo de prueba"
+  ],
+  "challenge": {
+    "max_objections": 0,
+    "requires_evidence": false,
+    "pressure_questions": [],
+    "time_rules": [
+      "Deja terminar al visitador. No interrumpas ni presiones por tiempo. Si divaga mucho, invítalo amablemente a resumir."
+    ],
+    "success_criterion": "Una presentación breve y correcta de ESOMED como esomeprazol para un perfil de paciente basta para mostrar aceptación. No necesitas sondeo profundo, parafraseo, estudios ni diferenciación tecnológica."
+  }
 }

@@ -14,6 +14,7 @@ import pytest_asyncio
 from sqlalchemy import func, select
 
 from uno.events import DomainEvent
+from uno.modules.training.content import load_catalog
 from uno.modules.training.models import PracticeAttempt, PracticeTurn
 from uno.modules.training.provider import FakeProvider, ProviderError
 from uno.modules.training.service import run_training_cycle
@@ -92,8 +93,16 @@ async def test_scenario_detail_hides_the_correct_answers(env: Env) -> None:
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["doctor_name"] == "Dr. Andrés Gómez"
-    assert len(body["quiz"]) == 4 and len(body["lesson"]["blocks"]) == 4
-    assert "correct" not in str(body["quiz"])  # el formulario no trae la respuesta
+    scenario = load_catalog().get(GENERAL)
+    assert scenario is not None
+    assert len(body["quiz"]) == len(scenario.quiz) == 4
+    assert len(body["lesson"]["blocks"]) == len(scenario.lesson.blocks)
+    # El formulario no trae la respuesta: ninguna clave de preguntas u opciones la delata.
+    # (Se revisan claves, no textos: una opción puede decir «correcta».)
+    keys = {k for q in body["quiz"] for k in q} | {
+        k for q in body["quiz"] for o in q["options"] for k in o
+    }
+    assert not any("correct" in k for k in keys)
     r = await env.client.get("/v1/training/scenarios/no-existe", headers=bearer(token))
     assert r.status_code == 404
 
@@ -146,7 +155,7 @@ async def test_full_practice_cycle_with_the_simulated_doctor(
     attempt = await start(env, token)
     assert attempt["status"] == "live"
     assert attempt["conversation_url"].startswith("fake:")
-    assert attempt["greeting"] == "Sí, doctora, cuénteme, pero breve por favor."
+    assert attempt["greeting"] == "Buenos días, doctora. Qué gusto saludarle, cuénteme."
     assert attempt["max_seconds"] == 300
 
     request = provider.requests[-1]
@@ -172,10 +181,10 @@ async def test_full_practice_cycle_with_the_simulated_doctor(
     overview = (await env.client.get("/v1/training/overview", headers=bearer(token))).json()
     first = overview["scenarios"][0]
     assert first["progress"]["status"] == "aprobado" and first["progress"]["best"] == 28
-    assert overview["suggested_slug"] == "internista_exigente"
+    assert overview["suggested_slug"] == "gastroenterologo_esceptico"  # siguiente en la ruta
 
     second = await start(env, token)
-    assert second["greeting"] == "Lo escucho, pero breve por favor."  # rota entre intentos
+    assert second["greeting"] == "Hola, bienvenido. Lo escucho con gusto."  # rota entre intentos
     done2 = await end(env, token, second["id"])
     assert done2["delta"] == 0
 
@@ -287,7 +296,8 @@ async def test_webhook_is_authenticated_by_token_and_idempotent(
     ).json()
     assert view["status"] == "evaluated"
     ids = [e["id"] for e in view["evaluation"]["critical_errors"]]
-    assert "exagera_beneficios" in ids and "promociona_sin_explorar" in ids
+    # Nivel básico: exagerar sigue siendo error crítico; explorar todavía no se exige.
+    assert "exagera_beneficios" in ids and "promociona_sin_explorar" not in ids
     assert "95%" in view["evaluation"]["key_moment"]["quote"]
     async with env.ctx.sessionmaker() as session:
         turns = (await session.execute(select(func.count()).select_from(PracticeTurn))).scalar_one()

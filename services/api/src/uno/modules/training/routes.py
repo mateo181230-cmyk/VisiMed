@@ -16,6 +16,7 @@ from uno.deps import get_ctx, get_current_user, get_session, require_role
 from uno.errors import ApiError
 from uno.modules.auth.models import User
 from uno.modules.training import service
+from uno.modules.training.content import Difficulty
 
 router = APIRouter(prefix="/v1/training", tags=["training"])
 webhooks = APIRouter(prefix="/v1/webhooks", tags=["webhooks"])
@@ -58,7 +59,7 @@ class ScenarioCard(BaseModel):
     title: str
     skill: str
     segment: str
-    difficulty: Literal["intermedio", "medio_alto", "alto"]
+    difficulty: Difficulty
     difficulty_label: str
     doctor_name: str
     doctor_specialty: str

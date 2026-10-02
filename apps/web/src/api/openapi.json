@@ -838,7 +838,7 @@
         "type": "object"
       },
       "GeoOut": {
-        "description": "Resultado de geocerca de un momento (�Llegu� o �Termin�). Sin coordenadas: el tel�fono\nya las tiene y no hace falta devolverlas.",
+        "description": "Resultado de geocerca de un momento («Llegué» o «Terminé»). Sin coordenadas: el teléfono\nya las tiene y no hace falta devolverlas.",
         "properties": {
           "distance_m": {
             "anyOf": [
@@ -2094,7 +2094,7 @@
         "type": "object"
       },
       "ReportOut": {
-        "description": "La ficha de una visita: lo que cont� el visitador en la llamada, con su confianza.",
+        "description": "La ficha de una visita: lo que contó el visitador en la llamada, con su confianza.",
         "properties": {
           "complete": {
             "title": "Complete",
@@ -2186,6 +2186,8 @@
           },
           "difficulty": {
             "enum": [
+              "basico",
+              "facil",
               "intermedio",
               "medio_alto",
               "alto"
@@ -2420,6 +2422,8 @@
         "properties": {
           "difficulty": {
             "enum": [
+              "basico",
+              "facil",
               "intermedio",
               "medio_alto",
               "alto"
@@ -3156,7 +3160,7 @@
   "paths": {
     "/salud": {
       "get": {
-        "description": "Estado del sistema, sin datos personales (doc 01 �17).",
+        "description": "Estado del sistema, sin datos personales (doc 01 §17).",
         "operationId": "health_salud_get",
         "responses": {
           "200": {

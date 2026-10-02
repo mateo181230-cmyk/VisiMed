@@ -1,66 +1,75 @@
 {
   "slug": "gastroenterologo_esceptico",
-  "order": 3,
+  "order": 2,
   "product": "ESOMED",
-  "segment": "Gastroenterólogo escéptico",
-  "title": "Ser preciso bajo presión",
-  "skill": "Adaptación al especialista",
-  "promise": "Evitar mensajes básicos y ubicar el producto en un paciente concreto.",
-  "instruction": "El especialista conoce la categoría. Sé breve, no le expliques lo obvio y responde exactamente lo que pregunta.",
-  "difficulty": "alto",
+  "segment": "Gastroenterólogo abierto a escuchar",
+  "title": "Resolver una duda sencilla",
+  "skill": "Escucha y argumento sencillo",
+  "promise": "Responder una duda y conseguir consideración con una explicación concreta.",
+  "instruction": "Pregunta por sus pacientes y explica dónde ubicas ESOMED. El médico solo planteará una duda sencilla y aceptará una respuesta prudente.",
+  "difficulty": "facil",
   "doctor": {
     "name": "Dr. Camilo Restrepo",
     "gender": "M",
     "specialty": "Gastroenterología",
     "years": 22,
-    "personality": "escéptico",
+    "personality": "cordial, curioso y receptivo",
     "patients_per_day": "12-15",
     "minutes": 3
   },
   "current_molecule": "Alta familiaridad con toda la categoría",
-  "opening_level": "bajo",
+  "opening_level": "alto",
   "barrier": {
     "code": "rechazo_mensaje_basico",
-    "text": "Rechaza mensajes básicos o genéricos sobre la categoría."
+    "text": "Quiere ubicar el producto en un perfil de paciente, sin revisar estudios ni hacer una comparación exhaustiva."
   },
   "objective": "Posicionar con precisión",
   "main_argument": "ESOMED desde el principio activo esomeprazol y su utilidad clínica concreta",
   "secondary_argument": "Hüttling solo si aporta a la diferenciación",
-  "base_objection": "Eso ya lo conozco",
+  "base_objection": "¿En qué paciente me lo ubicaría?",
   "objections": [
-    "Eso ya lo conozco.",
-    "¿Cuál sería el diferencial real?",
-    "¿En qué paciente concretamente me lo ubica?",
-    "Eso no tiene una diferencia clínica que yo note."
+    "Veo principalmente pacientes con reflujo; me interesa una opción concreta.",
+    "No tengo una marca fija y estoy dispuesto a escuchar."
   ],
   "greetings": [
-    "Tengo tres minutos. ¿De qué se trata?",
-    "Dígame. Voy corto de tiempo.",
-    "Sí, lo escucho."
+    "Buenos días. Cuénteme, lo escucho con gusto.",
+    "Hola. Tengo unos minutos, ¿qué me trae?"
   ],
   "expected_close": "Cierre con paciente objetivo específico y una razón clara para recordar ESOMED",
   "bot_behavior": [
-    "Eres el interlocutor más estricto. Tienes poca apertura y proteges activamente tus tres minutos.",
-    "Si el visitador explica conocimientos básicos de la categoría, interrúmpelo y recuérdale que ya los conoces.",
-    "Exige un perfil de paciente concreto y una razón precisa; una respuesta genérica recibe una segunda objeción inmediata.",
-    "No valides una buena visita por cortesía: la señal positiva solo aparece si fue breve, adaptada y clínicamente prudente."
+    "Responde a la primera pregunta con tu perfil de pacientes; no ocultes información ni pongas a prueba al visitador.",
+    "Plantea una sola duda sencilla sobre en qué paciente ubicar ESOMED, solo si esa información todavía falta.",
+    "Cuando conecte esomeprazol con un perfil de paciente, acepta la explicación y permite cerrar. No exijas tecnología ni estudios.",
+    "Si la primera respuesta es vaga, permite reformular con una ayuda breve. No añadas una segunda objeción ni exijas otra justificación."
   ],
   "lesson": {
-    "title": "Hablar con precisión ante un especialista",
-    "intro": "El gastroenterólogo conoce la categoría y dispone de poco tiempo. Tu valor está en seleccionar lo relevante, no en demostrar cuánto sabes.",
+    "title": "Una duda, una respuesta concreta",
+    "intro": "El especialista está abierto a escucharte. La dificultad consiste en ubicar el producto en un perfil de paciente, sin convertir la visita en una defensa de estudios.",
     "blocks": [
-      { "title": "Protege el tiempo", "text": "Reconoce que tiene tres minutos y formula una pregunta corta. Ser breve significa priorizar, no acelerar un discurso completo." },
-      { "title": "No expliques lo obvio", "text": "Si dice «eso ya lo conozco», valida su experiencia y lleva la conversación al paciente o criterio donde la propuesta podría ser pertinente." },
-      { "title": "Responde exactamente lo preguntado", "text": "Ante «¿en qué paciente?», responde con un perfil. Ante «¿cuál es el diferencial?», ofrece un punto preciso y prudente. No cambies de tema." },
-      { "title": "Cierra con foco", "text": "Resume producto, paciente y razón de recordación en una sola idea. El especialista no necesita escuchar otra vez toda la presentación." }
+      {
+        "title": "Haz una pregunta útil",
+        "text": "Pregunta por el perfil de pacientes que atiende. Una pregunta clara basta para empezar."
+      },
+      {
+        "title": "Responde la duda",
+        "text": "Si pregunta en qué paciente lo ubicas, conecta ESOMED y esomeprazol con el perfil que te acaba de describir."
+      },
+      {
+        "title": "Acepta el avance y cierra",
+        "text": "Cuando muestre consideración, deja una síntesis breve. No añadas argumentos que nadie ha pedido."
+      }
     ],
-    "example": "Usted ya conoce la categoría. Quisiera precisar dónde recordar ESOMED: en el paciente con reflujo o dispepsia que considere candidato a esomeprazol.",
+    "example": "Doctor, ¿qué pacientes con reflujo ve con más frecuencia? Entiendo. Para ese perfil quisiera dejarle presente ESOMED, esomeprazol, como una opción concreta.",
     "avoid": [
-      "Explicar qué es un IBP a un gastroenterólogo.",
-      "Decir que sirve para cualquier paciente.",
-      "Responder con una lista de atributos en lugar de un perfil concreto."
+      "Explicar la categoría como una clase.",
+      "Inventar evidencia o superioridades.",
+      "Continuar justificando cuando la duda ya quedó resuelta."
     ],
-    "sources": ["Integración con Close-Up §5 (caso 3) y §8", "Diálogo modelo de prueba §10", "Flujo de visita esperado, paso 6"]
+    "sources": [
+      "Integración con Close-Up §5 (caso 3) y §8",
+      "Diálogo modelo de prueba §10",
+      "Flujo de visita esperado, paso 6"
+    ]
   },
   "quiz": [
     {
@@ -68,9 +77,19 @@
       "skill": "apertura",
       "question": "El gastroenterólogo dice que solo tiene tres minutos. ¿Cómo respondes?",
       "options": [
-        { "id": "a", "text": "Comenzar una explicación completa de los IBP." },
-        { "id": "b", "text": "Reconocer el tiempo y hacer una pregunta breve sobre el paciente o criterio relevante.", "correct": true },
-        { "id": "c", "text": "Acelerar el mismo discurso promocional." }
+        {
+          "id": "a",
+          "text": "Comenzar una explicación completa de los IBP."
+        },
+        {
+          "id": "b",
+          "text": "Reconocer el tiempo y hacer una pregunta breve sobre el paciente o criterio relevante.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Acelerar el mismo discurso promocional."
+        }
       ],
       "explanation": "Adaptarse al tiempo significa priorizar, no hablar más rápido ni eliminar la exploración.",
       "source": "Flujo de visita esperado, paso 1 · Diálogo modelo §10"
@@ -78,13 +97,23 @@
     {
       "id": "l3_conocido",
       "skill": "manejo_objeciones",
-      "question": "Responde: «Eso ya lo conozco».",
+      "question": "El médico pregunta: «¿En qué paciente me lo ubicaría?». ¿Cómo respondes?",
       "options": [
-        { "id": "a", "text": "Explicar nuevamente qué es el esomeprazol." },
-        { "id": "b", "text": "Reconocer su experiencia y preguntar en qué perfil de paciente tendría sentido precisar la conversación.", "correct": true },
-        { "id": "c", "text": "Insistir en que esta presentación es diferente." }
+        {
+          "id": "a",
+          "text": "Explicar nuevamente qué es un IBP."
+        },
+        {
+          "id": "b",
+          "text": "Conectar ESOMED y esomeprazol con el perfil de paciente que describió.",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "Enumerar todos los estudios disponibles."
+        }
       ],
-      "explanation": "No compitas con el conocimiento del especialista; úsalo para llevar la conversación a una aplicación concreta.",
+      "explanation": "Una respuesta concreta resuelve la duda de este nivel; no necesitas una defensa de estudios.",
       "source": "Integración con Close-Up §5 (caso 3)"
     },
     {
@@ -92,9 +121,19 @@
       "skill": "argumentacion",
       "question": "¿Cuál frase es más precisa?",
       "options": [
-        { "id": "a", "text": "«Sirve para todos los pacientes con problemas gástricos»." },
-        { "id": "b", "text": "«Quisiera ubicar ESOMED en los pacientes con reflujo o dispepsia que usted considere candidatos a esomeprazol».", "correct": true },
-        { "id": "c", "text": "«Es el mejor IBP disponible»." }
+        {
+          "id": "a",
+          "text": "«Sirve para todos los pacientes con problemas gástricos»."
+        },
+        {
+          "id": "b",
+          "text": "«Quisiera ubicar ESOMED en los pacientes con reflujo o dispepsia que usted considere candidatos a esomeprazol».",
+          "correct": true
+        },
+        {
+          "id": "c",
+          "text": "«Es el mejor IBP disponible»."
+        }
       ],
       "explanation": "La precisión define un contexto clínico sin generalizar ni prometer superioridad.",
       "source": "Integración con Close-Up §8 · Mensajes clave §8"
@@ -102,28 +141,63 @@
     {
       "id": "l3_cierre",
       "skill": "cierre",
-      "question": "¿Qué debe conservar el cierre ante un especialista escéptico?",
+      "question": "¿Qué debe conservar el cierre ante este especialista receptivo?",
       "options": [
-        { "id": "a", "text": "Una razón concreta y un perfil de paciente.", "correct": true },
-        { "id": "b", "text": "Una lista completa de atributos." },
-        { "id": "c", "text": "Una solicitud de cambio inmediato." }
+        {
+          "id": "a",
+          "text": "Una razón concreta y un perfil de paciente.",
+          "correct": true
+        },
+        {
+          "id": "b",
+          "text": "Una lista completa de atributos."
+        },
+        {
+          "id": "c",
+          "text": "Una solicitud de cambio inmediato."
+        }
       ],
       "explanation": "Un cierre breve y específico tiene más valor que repetir el material promocional.",
       "source": "Tabla maestra de segmentación (cierre esperado) · Flujo de visita esperado, paso 6"
     }
   ],
   "approval": {
-    "min_total": 22,
-    "min_competencies": { "argumentacion": 4, "manejo_objeciones": 4, "cierre": 4 },
-    "blocking_errors": ["discurso_generico", "no_responde_objecion", "exagera_beneficios", "no_adapta_especialidad"]
+    "min_total": 14,
+    "min_competencies": {
+      "argumentacion": 3,
+      "cierre": 3
+    },
+    "blocking_errors": [
+      "exagera_beneficios",
+      "no_resalta_principio_activo"
+    ]
   },
   "casting": {
-    "face_id": "rff4f230c435",
-    "face_name": "Thomas",
+    "face_id": "rb1d65103218",
+    "face_name": "Victor - Office · Pro",
     "voice_id": "qdU62IMovREYmfk9SQ4K",
     "voice_name": "Yohan",
     "tts_model": "eleven_turbo_v2_5"
   },
-  "flow": { "turn_taking_patience": "medium", "pal_interruptibility": "low", "idle_engagement": "off" },
-  "sources": ["Tabla maestra de segmentación", "Integración con Close-Up §11 (médico C)", "Diálogo modelo de prueba §10"]
+  "flow": {
+    "turn_taking_patience": "high",
+    "pal_interruptibility": "high",
+    "idle_engagement": "off"
+  },
+  "sources": [
+    "Tabla maestra de segmentación",
+    "Integración con Close-Up §11 (médico C)",
+    "Diálogo modelo de prueba §10"
+  ],
+  "challenge": {
+    "max_objections": 1,
+    "requires_evidence": false,
+    "pressure_questions": [
+      "¿En qué paciente me lo ubicaría?"
+    ],
+    "time_rules": [
+      "Escucha sin interrumpir. Si divaga de forma prolongada, pide una síntesis con cordialidad."
+    ],
+    "success_criterion": "Una pregunta útil, una respuesta sencilla que ubique ESOMED en un perfil de paciente y un cierre breve bastan. No exijas evidencia ni diferenciación avanzada."
+  }
 }

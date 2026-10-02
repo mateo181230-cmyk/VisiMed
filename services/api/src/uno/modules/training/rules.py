@@ -17,7 +17,7 @@ from typing import Literal
 
 from uno.modules.training.rubric import COMPETENCIES, REINFORCEMENT_AREA
 
-RULES_VERSION = "reglas_v1"
+RULES_VERSION = "reglas_v2_progresivo"
 DEFAULT_IMPROVEMENT = "Afina el nivel de detalle del argumento."
 
 Role = Literal["rep", "doctor"]
@@ -586,25 +586,64 @@ class RulesResult:
     signals: Signals
 
 
-def evaluate(turns: list[Turn], scenario_slug: str) -> RulesResult:
+def evaluate(turns: list[Turn], scenario_slug: str, *, introductory: bool = False) -> RulesResult:
     a = analyze(turns)
     scores: dict[str, int] = {}
     comments: dict[str, str] = {}
     for competency in COMPETENCIES:
         scores[competency.id], comments[competency.id] = SCORERS[competency.id](a)
     errors = detect_errors(a, scenario_slug)
+    assessed = COMPETENCIES
+    if introductory:
+        # La primera práctica pide presentación y cierre, no las seis técnicas completas.
+        assessed = tuple(c for c in COMPETENCIES if c.id in ("apertura", "argumentacion", "cierre"))
+        scores["apertura"] = max(
+            scores["apertura"],
+            (3 if a.greeting else 1) + (1 if 0 < a.first_turn_words <= 60 else 0),
+        )
+        comments["apertura"] = (
+            "Saludaste y presentaste el producto con brevedad."
+            if a.greeting and 0 < a.first_turn_words <= 60
+            else "Abre con un saludo y una presentación breve."
+        )
+        for area in ("sondeo", "parafraseo", "manejo_objeciones"):
+            comments[area] = (
+                "Esta técnica se trabaja en los niveles siguientes; "
+                "no es requisito de esta práctica."
+            )
+        last = next((t.text for t in reversed(turns) if t.role == "rep"), "")
+        if has(last, PRODUCTO) and has(last, CLINICO) and 0 < a.last_turn_words <= 60:
+            scores["cierre"] = max(scores["cierre"], 4)
+            comments["cierre"] = "Dejaste una idea breve con producto y perfil de paciente."
+            errors = [e for e in errors if e != "cierre_sin_idea"]
+        errors = [
+            e
+            for e in errors
+            if e
+            not in (
+                "promociona_sin_explorar",
+                "no_identifica_prescripcion",
+                "huttling_forzado",
+            )
+        ]
     strengths = [
         f"{REINFORCEMENT_AREA[c.id].capitalize()}: {comments[c.id]}"
-        for c in COMPETENCIES
+        for c in assessed
         if scores[c.id] >= 4
     ]
     improvements = [
         f"{REINFORCEMENT_AREA[c.id].capitalize()}: {comments[c.id]}"
-        for c in COMPETENCIES
+        for c in assessed
         if scores[c.id] <= 2
     ]
-    areas = [c.id for c in COMPETENCIES if scores[c.id] <= 3]
-    if "sondeo" in areas:
+    areas = [c.id for c in assessed if scores[c.id] <= 3]
+    if introductory:
+        recommendation = (
+            "Practica un saludo, ESOMED como esomeprazol para un perfil de paciente "
+            "y un cierre breve. "
+            "En este nivel no necesitas estudios ni resolver objeciones."
+        )
+    elif "sondeo" in areas:
         recommendation = (
             "Para mejorar, no nombres el producto hasta haber hecho al menos dos preguntas sobre "
             "cómo selecciona el IBP."

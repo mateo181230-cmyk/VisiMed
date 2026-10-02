@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description Estado del sistema, sin datos personales (doc 01 �17).
+         * @description Estado del sistema, sin datos personales (doc 01 §17).
          */
         get: operations["health_salud_get"];
         put?: never;
@@ -743,7 +743,7 @@ export interface components {
         };
         /**
          * GeoOut
-         * @description Resultado de geocerca de un momento (�Llegu� o �Termin�). Sin coordenadas: el tel�fono
+         * @description Resultado de geocerca de un momento («Llegué» o «Terminé»). Sin coordenadas: el teléfono
          *     ya las tiene y no hace falta devolverlas.
          */
         GeoOut: {
@@ -1175,7 +1175,7 @@ export interface components {
         };
         /**
          * ReportOut
-         * @description La ficha de una visita: lo que cont� el visitador en la llamada, con su confianza.
+         * @description La ficha de una visita: lo que contó el visitador en la llamada, con su confianza.
          */
         ReportOut: {
             /** Complete */
@@ -1219,7 +1219,7 @@ export interface components {
              * Difficulty
              * @enum {string}
              */
-            difficulty: "intermedio" | "medio_alto" | "alto";
+            difficulty: "basico" | "facil" | "intermedio" | "medio_alto" | "alto";
             /** Difficulty Label */
             difficulty_label: string;
             doctor: components["schemas"]["DoctorAvailability"];
@@ -1293,7 +1293,7 @@ export interface components {
              * Difficulty
              * @enum {string}
              */
-            difficulty: "intermedio" | "medio_alto" | "alto";
+            difficulty: "basico" | "facil" | "intermedio" | "medio_alto" | "alto";
             /** Difficulty Label */
             difficulty_label: string;
             /**

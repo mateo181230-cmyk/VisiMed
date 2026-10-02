@@ -122,7 +122,8 @@ def build(
     quiz: QuizSnapshot | None,
 ) -> dict[str, Any]:
     """Evaluación completa y lista para mostrar. Todo texto sobre el producto sale del banco."""
-    result = rules.evaluate(turns, scenario.slug)
+    introductory = scenario.difficulty == "basico"
+    result = rules.evaluate(turns, scenario.slug, introductory=introductory)
     total = sum(result.scores.values())
     band = band_for(total)
     # Con 3 o más errores críticos no puede ser «sobresaliente» (prototipo, `index.js`).
@@ -138,7 +139,12 @@ def build(
     improvements = result.improvements
     if improvements == [rules.DEFAULT_IMPROVEMENT]:
         # Ninguna competencia quedó en 2 o menos: se señala la más baja, si no está completa.
-        lowest = min(COMPETENCIES, key=lambda c: result.scores[c.id])
+        assessed = tuple(
+            c
+            for c in COMPETENCIES
+            if not introductory or c.id in scenario.approval.min_competencies
+        )
+        lowest = min(assessed, key=lambda c: result.scores[c.id])
         if result.scores[lowest.id] < MAX_PER_COMPETENCY:
             improvements = [f"{lowest.name}: {result.comments[lowest.id]}"]
     return {
@@ -146,7 +152,16 @@ def build(
         "preliminary": True,
         "total": total,
         "max": MAX_TOTAL,
-        "band": {"level": band.level, "label": band.label},
+        "band": {
+            "level": band.level,
+            "label": (
+                "Presentación inicial lograda"
+                if assessment["approved"]
+                else "Presentación inicial por reforzar"
+            )
+            if introductory
+            else band.label,
+        },
         "competencies": [
             {
                 "id": c.id,
@@ -161,6 +176,7 @@ def build(
         "case_checks": [
             {"id": check_id, "text": text, "value": result.checks[check_id]}
             for check_id, text in CASE_CHECKS
+            if not introductory or check_id == "posiciono_principio_activo"
         ],
         "strengths": result.strengths[:2],
         "improvements": improvements[:2],
@@ -176,7 +192,18 @@ def build(
             if best
             else None
         ),
-        "feedback": BAND_FEEDBACK[band.level],
+        "feedback": (
+            (
+                "Lograste una primera presentación breve y correcta. "
+                "Practica ahora con un médico que plantee una duda sencilla."
+                if assessment["approved"]
+                else "Refuerza el saludo, el principio activo y una idea breve "
+                "para un perfil de paciente. "
+                "No necesitas estudios ni objeciones en este nivel."
+            )
+            if introductory
+            else BAND_FEEDBACK[band.level]
+        ),
         "training": assessment,
         "quiz": {"correct": quiz.correct, "total": quiz.total} if quiz else None,
         "turns": len(turns),
