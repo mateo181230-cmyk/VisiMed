@@ -187,7 +187,7 @@ async def test_snapshot_scopes_rep_and_gives_manager_real_history(make_env: Any)
             "/v1/intelligence/snapshot", headers={"authorization": f"Bearer {manager_token}"}
         )
         assert team.status_code == 200 and len(team.json()["visits"]) == 2
-        # Después de 8 días el historial conserva la visita aunque no entre en la agenda de 7 días.
+        # Después de 8 días ambos snapshots conservan la historia propia.
         env.clock.advance(days=8)
         history = await env.client.get(
             "/v1/intelligence/snapshot", headers={"authorization": f"Bearer {token}"}
@@ -202,7 +202,8 @@ async def test_snapshot_scopes_rep_and_gives_manager_real_history(make_env: Any)
             visit_id
         )
         agenda = await get_state(env, token)
-        assert agenda["reports"] == []  # fuera de la ventana de agenda, presente en el historial
+        assert [report["visit_id"] for report in agenda["reports"]] == [str(visit_id)]
+        assert [visit["id"] for visit in agenda["visits"]] == [str(visit_id)]
 
 
 async def test_presented_products_change_the_line_and_edits_refresh_it(make_env: Any) -> None:

@@ -117,7 +117,9 @@ Se calcula al aplicar el evento contra la referencia de la institución de la vi
 
 ## Bajada de estado
 
-`GET /v1/me/state?cursor=N` → `{ server_time, cursor, full, timezone, lines, products, institutions, doctors, visits, config }`. Sin cursor, o con un cursor mayor que el del servidor, devuelve el estado **completo** (visitas de −7 a +14 días). Con cursor, solo lo que cambió (`change_seq > N`). El teléfono guarda `cursor` y lo envía en la siguiente llamada.
+`GET /v1/me/state?cursor=N` → `{ server_time, cursor, full, timezone, lines, products, institutions, doctors, visits, reports, config }`. Sin cursor, con cursor ≤ 0 o mayor que el del servidor, devuelve el estado **completo**: todas las visitas y reportes propios, el panel actual y los médicos e instituciones referenciados por esas visitas, incluido el historial y las citas lejanas. Con un cursor válido, devuelve lo que cambió (`change_seq > N`) y las dependencias de las visitas devueltas. El teléfono guarda `cursor` y lo envía en la siguiente llamada.
+
+`config.window_past_days` y `window_future_days` conservan la sugerencia de presentación de −7 a +14 días por compatibilidad; no recortan el estado completo. Así, reinstalar la app o actualizar IndexedDB no elimina el historial visible ni las citas fuera de esa ventana.
 
 Campos de `visits[]` agregados por E4:
 

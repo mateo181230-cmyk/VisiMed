@@ -206,9 +206,10 @@ export class SyncEngine {
       return 'ok'
     }
 
-    if (res.kind === 'client') {
-      // 4xx: el lote tiene algo que el servidor no acepta. Se aísla evento por evento para no
-      // quedar atascados: el malo se rechaza y los demás siguen.
+    if (res.kind === 'client' && res.eventValidation) {
+      // Solo una validación reconocida del backend puede rechazar un evento.
+      // Un 403/404/408/413 de un proxy no prueba que el evento sea inválido.
+      // Se aísla evento por evento para que los demás puedan seguir.
       if (batch.length > 1) {
         await this.database.outbox.where('seq').anyOf(seqs).modify({ status: 'pending' })
         for (const e of batch) {

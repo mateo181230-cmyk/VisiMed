@@ -200,6 +200,22 @@ describe('sin red, servidor caído y sesión vencida', () => {
 })
 
 describe('errores 4xx', () => {
+  it.each([400, 403, 404, 408, 413, 422])('HTTP %i sin validación de eventos conserva el lote y permite reintentar', async (status) => {
+    await schedule('v1')
+    await schedule('v2')
+    port.syncResult = () => ({ ok: false, kind: 'client', status })
+    await engine.run(true)
+    expect(engine.getState()).toBe('error')
+    expect(port.syncCalls).toHaveLength(1)
+    expect((await db.outbox.toArray()).map((row) => row.status)).toEqual(['pending', 'pending'])
+    expect(port.stateCalls).toHaveLength(0)
+
+    port.syncResult = new FakePort().syncResult
+    await engine.run(true)
+    expect(engine.getState()).toBe('idle')
+    expect(await db.outbox.count()).toBe(0)
+  })
+
   it('un evento que el servidor no acepta se aísla y los demás siguen', async () => {
     await schedule('good1')
     await schedule('bad')
@@ -207,8 +223,8 @@ describe('errores 4xx', () => {
     port.syncResult = (events) =>
       events.some((e) => e.visit_id === 'bad')
         ? events.length > 1
-          ? { ok: false, kind: 'client', status: 422 }
-          : { ok: false, kind: 'client', status: 422, code: 'invalid_payload' }
+          ? { ok: false, kind: 'client', status: 422, eventValidation: true }
+          : { ok: false, kind: 'client', status: 422, eventValidation: true, code: 'invalid_payload' }
         : {
             ok: true,
             data: {

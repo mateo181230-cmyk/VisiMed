@@ -32,6 +32,8 @@ export type ApiFailure =
       status: number
       code?: string
       message?: string
+      /** El backend identificó un error del evento, no del transporte ni de la sesión. */
+      eventValidation?: true
     }
 export type ApiResult<T> = { ok: true; data: T } | ApiFailure
 
@@ -72,10 +74,27 @@ interface Raw<T> {
 function detailOf(error: unknown): { code?: string; message?: string } {
   const detail = (error as { detail?: unknown } | undefined)?.detail
   if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
-    const d = detail as { code?: string; message?: string }
-    return { code: d.code, message: d.message }
+    const d = detail as { code?: unknown; message?: unknown }
+    return {
+      code: typeof d.code === 'string' ? d.code : undefined,
+      message: typeof d.message === 'string' ? d.message : undefined,
+    }
   }
   return {}
+}
+
+function isEventValidation(status: number, error: unknown, code?: string): boolean {
+  if (status !== 400 && status !== 422) return false
+  if (code === 'invalid_payload' || code === 'invalid_event_envelope') return true
+  // FastAPI valida el sobre antes de procesar el lote. Solo se aísla un evento si
+  // todos los errores apuntan a uno: un device_id/sent_at inválido no invalida visitas.
+  const detail = (error as { detail?: unknown } | undefined)?.detail
+  return status === 422 && Array.isArray(detail) && detail.length > 0 && detail.every((item: unknown) => {
+    if (!item || typeof item !== 'object') return false
+    const { loc, type, msg } = item as { loc?: unknown; type?: unknown; msg?: unknown }
+    return Array.isArray(loc) && loc.length >= 3 && loc[0] === 'body' && loc[1] === 'events'
+      && Number.isInteger(loc[2]) && loc[2] >= 0 && typeof type === 'string' && typeof msg === 'string'
+  })
 }
 
 async function attempt<T>(fn: () => Promise<Raw<T>>): Promise<Raw<T> | null> {
@@ -91,9 +110,12 @@ function classify<T>(res: Raw<T>): ApiResult<T> {
   if (res.response.ok) return { ok: true, data: res.data as T }
   if (status === 401) return { ok: false, kind: 'auth', status: 401 }
   const d = detailOf(res.error)
+  const eventValidation = isEventValidation(status, res.error, d.code)
   return status >= 500 || status === 429
     ? { ok: false, kind: 'server', status, ...d }
-    : { ok: false, kind: 'client', status, ...d }
+    : { ok: false, kind: 'client', status, ...d,
+        ...(eventValidation ? { eventValidation: true as const, code: d.code ?? 'invalid_event_envelope' } : {}),
+      }
 }
 
 /** Llama al servidor con reintento de sesión. ``refresh: false`` para el ingreso y el refresco. */

@@ -2,19 +2,19 @@
 
 El teléfono pide ``GET /v1/me/state?cursor=N`` y recibe solo lo que cambió después de ``N``.
 Sin cursor (o con un cursor mayor que el del servidor, por ejemplo tras reiniciar la base) se
-entrega el estado completo: catálogo de líneas, panel de médicos y visitas de −7 a +14 días.
+entrega el estado completo: catálogo, panel, todas sus visitas y reportes, con los médicos e
+instituciones que referencian. La ventana de configuración solo orienta la presentación.
 """
 
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from uno import clock
 from uno.db import current_change_seq
 from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import User
@@ -120,6 +120,7 @@ class ReportOut(BaseModel):
 
 class StateConfig(BaseModel):
     reminder_options: list[int]
+    # Compatibilidad con clientes previos: sugerencia visual, nunca límite de sincronización.
     window_past_days: int = WINDOW_PAST_DAYS
     window_future_days: int = WINDOW_FUTURE_DAYS
 
@@ -146,13 +147,6 @@ def _geo_out(state: str | None, distance_m: int | None, precision_m: float | Non
     )
 
 
-def _window(now: datetime, tz_name: str) -> tuple[datetime, datetime]:
-    today: date = clock.local_date(now, tz_name)
-    start, _ = clock.local_day_bounds(today - timedelta(days=WINDOW_PAST_DAYS), tz_name)
-    _, end = clock.local_day_bounds(today + timedelta(days=WINDOW_FUTURE_DAYS), tz_name)
-    return start, end
-
-
 async def build_state(
     session: AsyncSession, user: User, cursor: int | None, now: datetime
 ) -> StateOut:
@@ -163,18 +157,33 @@ async def build_state(
     lines = (await session.execute(select(ProductLine).order_by(ProductLine.code))).scalars().all()
     products = (await session.execute(select(Product).order_by(Product.name))).scalars().all()
 
-    # --- médicos del panel que cambiaron (o cuyo vínculo con el panel cambió)
-    doctor_rows = (
-        await session.execute(
-            select(Doctor, Panel.default_line_id)
-            .join(Panel, Panel.doctor_id == Doctor.id)
-            .where(
-                Panel.representative_id == user.id,
-                or_(Doctor.change_seq > since, Panel.change_seq > since),
-            )
-            .order_by(Doctor.full_name)
+    # --- visitas: full reemplaza la copia local y debe conservar historia y agenda futura.
+    visit_query = select(Visit).where(Visit.representative_id == user.id)
+    if not full:
+        visit_query = visit_query.where(Visit.change_seq > since)
+    visits = (await session.execute(visit_query.order_by(Visit.scheduled_at))).scalars().all()
+
+    # --- panel actual más médicos históricos; las visitas nuevas incluyen sus dependencias.
+    panel_doctor_ids = select(Panel.doctor_id).where(Panel.representative_id == user.id)
+    visit_doctor_ids = select(Visit.doctor_id).where(Visit.representative_id == user.id)
+    accessible_doctor = or_(Doctor.id.in_(panel_doctor_ids), Doctor.id.in_(visit_doctor_ids))
+    doctor_query = (
+        select(Doctor, Panel.default_line_id)
+        .outerjoin(
+            Panel,
+            and_(Panel.doctor_id == Doctor.id, Panel.representative_id == user.id),
         )
-    ).all()
+        .where(accessible_doctor)
+    )
+    if not full:
+        doctor_query = doctor_query.where(
+            or_(
+                Doctor.change_seq > since,
+                Panel.change_seq > since,
+                Doctor.id.in_({v.doctor_id for v in visits}),
+            )
+        )
+    doctor_rows = (await session.execute(doctor_query.order_by(Doctor.full_name))).all()
     doctors = [
         DoctorOut(
             id=d.id,
@@ -187,28 +196,24 @@ async def build_state(
         for d, default_line_id in doctor_rows
     ]
 
-    # --- instituciones: las de sus médicos que cambiaron, más las de los médicos devueltos
-    returned_inst_ids = {d.institution_id for d in doctors if d.institution_id is not None}
-    panel_inst_ids = (
-        select(Doctor.institution_id)
-        .join(Panel, Panel.doctor_id == Doctor.id)
-        .where(Panel.representative_id == user.id, Doctor.institution_id.is_not(None))
+    # --- sedes actuales y sedes originales de las visitas, aunque el médico haya cambiado.
+    returned_inst_ids = {d.institution_id for d in doctors if d.institution_id is not None} | {
+        v.institution_id for v in visits if v.institution_id is not None
+    }
+    doctor_inst_ids = select(Doctor.institution_id).where(
+        accessible_doctor, Doctor.institution_id.is_not(None)
+    )
+    visit_inst_ids = select(Visit.institution_id).where(
+        Visit.representative_id == user.id, Visit.institution_id.is_not(None)
     )
     inst_query = select(Institution).where(
-        Institution.id.in_(panel_inst_ids),
-        or_(
-            Institution.change_seq > since,
-            Institution.id.in_(returned_inst_ids or {uuid.UUID(int=0)}),
-        ),
+        or_(Institution.id.in_(doctor_inst_ids), Institution.id.in_(visit_inst_ids))
     )
+    if not full:
+        inst_query = inst_query.where(
+            or_(Institution.change_seq > since, Institution.id.in_(returned_inst_ids))
+        )
     institutions = (await session.execute(inst_query.order_by(Institution.name))).scalars().all()
-
-    # --- visitas
-    visit_query = select(Visit).where(Visit.representative_id == user.id, Visit.change_seq > since)
-    if full:
-        start, end = _window(now, user.timezone)
-        visit_query = visit_query.where(Visit.scheduled_at >= start, Visit.scheduled_at < end)
-    visits = (await session.execute(visit_query.order_by(Visit.scheduled_at))).scalars().all()
 
     line_map: dict[uuid.UUID, list[uuid.UUID]] = {v.id: [v.primary_line_id] for v in visits}
     if visits:
@@ -260,11 +265,10 @@ async def build_state(
     report_query = (
         select(VisitReport)
         .join(Visit, Visit.id == VisitReport.visit_id)
-        .where(Visit.representative_id == user.id, VisitReport.change_seq > since)
+        .where(Visit.representative_id == user.id)
     )
-    if full:
-        start, end = _window(now, user.timezone)
-        report_query = report_query.where(Visit.scheduled_at >= start, Visit.scheduled_at < end)
+    if not full:
+        report_query = report_query.where(VisitReport.change_seq > since)
     reports = (await session.execute(report_query.order_by(VisitReport.updated_at))).scalars().all()
 
     return StateOut(

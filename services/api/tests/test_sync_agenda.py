@@ -13,13 +13,16 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 
 from uno import clock
+from uno.db import next_change_seq
 from uno.events import DomainEvent
 from uno.ids import uuid7
 from uno.modules.agenda.models import Visit
+from uno.modules.calls.models import VisitReport
+from uno.modules.catalog.models import Doctor, Institution, Panel
 from uno.modules.sync import service as sync_service
 from uno.modules.sync.models import SyncEvent
 
-from .conftest import OTHER_PHONE, Env, bearer, rep_token
+from .conftest import OTHER_PHONE, Env, bearer, login, make_user, rep_token
 from .helpers import doctor_event, ev, get_state, post_sync, visit_event
 
 
@@ -332,7 +335,7 @@ async def test_incremental_state_returns_only_changes(env: Env) -> None:
     await post_sync(env, token, [v2, resched])
     delta = await get_state(env, token, cursor)
     assert sorted(v["id"] for v in delta["visits"]) == sorted([str(vid1), str(vid2)])
-    assert delta["doctors"] == []
+    assert [doctor["id"] for doctor in delta["doctors"]] == [str(doctor_id)]
     assert delta["cursor"] > cursor
 
 
@@ -345,7 +348,7 @@ async def test_state_with_cursor_ahead_of_server_is_full(env: Env) -> None:
     assert state["full"] is True and len(state["visits"]) == 1
 
 
-async def test_full_state_only_covers_the_window(env: Env) -> None:
+async def test_full_state_keeps_history_and_far_future_visits(env: Env) -> None:
     token = await rep_token(env)
     d_ev, doctor_id = doctor_event(env)
     events = [d_ev]
@@ -362,10 +365,115 @@ async def test_full_state_only_covers_the_window(env: Env) -> None:
     await post_sync(env, token, events)
     state = await get_state(env, token)
     got = {v["id"] for v in state["visits"]}
-    assert got == {ids["past_ok"], ids["future_ok"]}
-    # Lo que quedó fuera de la ventana sí llega por cambios incrementales.
+    assert got == set(ids.values())
+    # La ventana de presentación se conserva por compatibilidad, sin recortar el snapshot.
+    assert state["config"]["window_past_days"] == 7
+    assert state["config"]["window_future_days"] == 14
     later = await get_state(env, token, cursor=1)
     assert ids["old"] in {v["id"] for v in later["visits"]}
+
+
+@pytest.mark.parametrize("role", ["rep", "admin"])
+async def test_full_state_includes_historical_dependencies_without_other_users_data(
+    env: Env, role: str
+) -> None:
+    user_id = await make_user(env, role=role)
+    token = await login(env)
+    other_id = await make_user(env, phone=OTHER_PHONE)
+    other_token = await login(env, phone=OTHER_PHONE)
+    doctor, doctor_id = doctor_event(env)
+    old_visit, old_id = visit_event(env, doctor_id=doctor_id, scheduled_at=at(env, days=-30))
+    far_visit, far_id = visit_event(env, doctor_id=doctor_id, scheduled_at=at(env, days=30))
+    await post_sync(env, token, [doctor, old_visit, far_visit])
+    other_doctor, other_doctor_id = doctor_event(env, name="Médico de otro visitador")
+    other_visit, other_visit_id = visit_event(
+        env, doctor_id=other_doctor_id, scheduled_at=at(env, days=-30)
+    )
+    await post_sync(env, other_token, [other_doctor, other_visit])
+
+    current_inst_id = uuid7()
+    async with env.ctx.sessionmaker() as session:
+        own_doctor = await session.get(Doctor, doctor_id)
+        historic_inst_id = own_doctor.institution_id
+        session.add(
+            Institution(
+                id=current_inst_id,
+                name="Nueva sede del médico",
+                created_at=clock.now(),
+                change_seq=0,
+            )
+        )
+        await session.flush()
+        own_doctor.institution_id = current_inst_id
+        await session.delete(await session.get(Panel, (user_id, doctor_id)))
+        # Otro panel no debe duplicar al médico ni filtrar su línea por defecto.
+        session.add(
+            Panel(
+                representative_id=other_id,
+                doctor_id=doctor_id,
+                default_line_id=env.lines["RESPI"],
+            )
+        )
+        for visit_id in (old_id, other_visit_id):
+            visit = await session.get(Visit, visit_id)
+            visit.status = "confirmed"
+            visit.finished_at = visit.scheduled_at + timedelta(minutes=10)
+            session.add(
+                VisitReport(
+                    visit_id=visit_id,
+                    status="confirmed",
+                    fields={
+                        "summary": {
+                            "value": "Resumen histórico",
+                            "confidence": "high",
+                            "source": "rep_edit",
+                        }
+                    },
+                    created_at=visit.finished_at,
+                    updated_at=visit.finished_at,
+                    confirmed_at=visit.finished_at,
+                    change_seq=0,
+                )
+            )
+        # También un registro importado sin secuencia debe estar en el snapshot completo.
+        (await session.get(Visit, old_id)).change_seq = 0
+        await session.commit()
+
+    for cursor in (None, 0, 1_000_000):
+        state = await get_state(env, token, cursor=cursor)
+        assert state["full"] is True
+        assert {visit["id"] for visit in state["visits"]} == {str(old_id), str(far_id)}
+        assert [report["visit_id"] for report in state["reports"]] == [str(old_id)]
+        assert [item["id"] for item in state["doctors"]] == [str(doctor_id)]
+        assert state["doctors"][0]["default_line_id"] is None
+        assert {item["id"] for item in state["institutions"]} == {
+            str(historic_inst_id),
+            str(current_inst_id),
+        }
+
+
+async def test_incremental_visit_includes_doctor_and_original_institution_outside_panel(
+    env: Env,
+) -> None:
+    user_id = await make_user(env)
+    token = await login(env)
+    doctor, doctor_id = doctor_event(env)
+    visit, visit_id = visit_event(env, doctor_id=doctor_id, scheduled_at=at(env, days=30))
+    await post_sync(env, token, [doctor, visit])
+    initial = await get_state(env, token)
+    async with env.ctx.sessionmaker() as session:
+        await session.delete(await session.get(Panel, (user_id, doctor_id)))
+        stored = await session.get(Visit, visit_id)
+        stored.scheduled_at = at(env, days=31)
+        stored.change_seq = await next_change_seq(session)
+        await session.commit()
+    delta = await get_state(env, token, cursor=initial["cursor"])
+    assert delta["full"] is False
+    assert [item["id"] for item in delta["visits"]] == [str(visit_id)]
+    assert [item["id"] for item in delta["doctors"]] == [str(doctor_id)]
+    assert [item["id"] for item in delta["institutions"]] == [
+        doctor["payload"]["institution"]["id"]
+    ]
 
 
 async def test_change_seq_is_strictly_increasing(env: Env) -> None:
@@ -562,7 +670,9 @@ class _FakeRegistration:
                     .values(status="applied")
                 )
                 await conn.commit()
-        raise IntegrityError("INSERT INTO visit", {}, Exception("UNIQUE constraint failed: visit.id"))
+        raise IntegrityError(
+            "INSERT INTO visit", {}, Exception("UNIQUE constraint failed: visit.id")
+        )
 
 
 async def test_a_lost_race_against_the_same_event_is_a_duplicate_not_a_500(
@@ -575,7 +685,9 @@ async def test_a_lost_race_against_the_same_event_is_a_duplicate_not_a_500(
     assert body["results"][0]["status"] == "duplicate"
 
 
-async def test_a_real_integrity_error_is_not_swallowed(env: Env, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_a_real_integrity_error_is_not_swallowed(
+    env: Env, monkeypatch: pytest.MonkeyPatch
+) -> None:
     token = await rep_token(env)
     d_ev, _ = doctor_event(env)
     monkeypatch.setattr(sync_service, "get_handler", lambda _t: _FakeRegistration(False))
