@@ -9,7 +9,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { AdminDashboard } from './AdminDashboard'
 
 export function IntelligenceOverview() {
-  const { mode, doctors, path, analysis, representatives, scope, setScope } = useIntelligence()
+  const { mode, doctors, path, calendarPath, analysis, representatives, scope, setScope } = useIntelligence()
   const [openModule, setOpenModule] = useState<string | null>(null)
   const { user } = useAuth()
   if (user?.role === 'admin' && !path().includes('/demo')) return <AdminDashboard />
@@ -138,7 +138,7 @@ export function IntelligenceOverview() {
             </ul>
             <h3>Productos mencionados en reportes confirmados</h3>
             {signals(analysis.insights.products)}
-            <Link className="intel-text-link" to={path('calendario')}>
+            <Link className="intel-text-link" to={calendarPath()}>
               Ver próximas visitas
             </Link>
           </MobileAccordion>

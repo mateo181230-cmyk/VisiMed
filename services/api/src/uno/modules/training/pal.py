@@ -10,17 +10,18 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections import defaultdict
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 
 from uno import clock
 from uno.config import Settings
 from uno.context import AppContext
 from uno.modules.training import prompts
 from uno.modules.training.content import Catalog, Scenario, get_catalog
-from uno.modules.training.models import PracticeAttempt, TrainingScenarioVersion
+from uno.modules.training.models import ACTIVE_STATUSES, PracticeAttempt, TrainingScenarioVersion
 from uno.modules.training.provider import PAL_PREFIX, ProviderError, TavusProvider
 
 
@@ -110,11 +111,7 @@ async def apply(
             ).scalar_one_or_none()
             # Una clave nueva puede pertenecer a otra cuenta. La referencia local solo sirve
             # si el PAL todavía existe en la cuenta con la que estamos publicando.
-            if (
-                current
-                and current.content_hash == digest
-                and current.tavus_pal_id in published_ids
-            ):
+            if current and current.content_hash == digest and current.tavus_pal_id in published_ids:
                 outcome[scenario.slug] = f"igual (v{current.version}, {current.tavus_pal_id})"
                 say(f"= {scenario.doctor.name:22} sin cambios · v{current.version}")
                 continue
@@ -165,7 +162,7 @@ async def apply(
 
 
 async def cleanup(ctx: AppContext, *, say: Callable[[str], None] = print) -> int:
-    """Borra en Tavus los PAL de versiones retiradas que ya no usa ninguna práctica viva."""
+    """Borra PAL sin versiones vigentes ni prácticas vivas, conservando referencias si falla."""
     provider = ctx.conversation_provider
     if not isinstance(provider, TavusProvider):
         raise ProviderError("off", "UNO_TRAINING_BACKEND debe ser «tavus» para limpiar")
@@ -183,23 +180,34 @@ async def cleanup(ctx: AppContext, *, say: Callable[[str], None] = print) -> int
             .scalars()
             .all()
         )
+        by_pal: dict[str, list[TrainingScenarioVersion]] = defaultdict(list)
         for version in retired:
-            in_use = (
-                await session.execute(
-                    select(func.count())
-                    .select_from(PracticeAttempt)
-                    .where(
-                        PracticeAttempt.version_id == version.id,
-                        PracticeAttempt.status.in_(("starting", "live")),
-                    )
-                )
-            ).scalar_one()
-            if in_use:
-                continue
             assert version.tavus_pal_id is not None
-            if await provider.delete_pal(version.tavus_pal_id):
-                removed += 1
-                say(f"borrado {version.tavus_pal_id} ({version.scenario_slug} v{version.version})")
-            version.tavus_pal_id = None
-        await session.commit()
+            by_pal[version.tavus_pal_id].append(version)
+        for pal_id, versions in by_pal.items():
+            in_use = await session.scalar(
+                select(TrainingScenarioVersion.id)
+                .outerjoin(
+                    PracticeAttempt, PracticeAttempt.version_id == TrainingScenarioVersion.id
+                )
+                .where(
+                    TrainingScenarioVersion.tavus_pal_id == pal_id,
+                    or_(
+                        TrainingScenarioVersion.retired_at.is_(None),
+                        PracticeAttempt.status.in_(ACTIVE_STATUSES),
+                    ),
+                )
+                .limit(1)
+            )
+            if in_use is not None:
+                continue
+            if not await provider.delete_pal(pal_id):
+                say(f"no se borró {pal_id}; se conserva la referencia para reintentar")
+                continue
+            for version in versions:
+                version.tavus_pal_id = None
+            # Cada borrado remoto confirmado queda guardado aunque falle uno posterior.
+            await session.commit()
+            removed += 1
+            say(f"borrado {pal_id} ({len(versions)} versiones retiradas)")
     return removed

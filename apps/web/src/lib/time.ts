@@ -97,18 +97,16 @@ export function hhmm(at: Date | string, tz: string): string {
   return `${pad(p.h)}:${pad(p.mi)}`
 }
 
-/** ``"14:30"`` → ``2:30 PM`` (para etiquetas de horas sugeridas). */
+/** ``"14:30"`` → ``2:30 p. m.`` (convención es-CO para horas sugeridas). */
 export function format12(hhmmValue: string): string {
   const [h, m] = hhmmValue.split(':').map(Number)
   const h12 = h! % 12 === 0 ? 12 : h! % 12
-  return `${h12}:${pad(m!)} ${h! < 12 ? 'AM' : 'PM'}`
+  return `${h12}:${pad(m!)} ${h! < 12 ? 'a. m.' : 'p. m.'}`
 }
 
-/** ``10:30 AM`` */
+/** Hora local con la misma convención es-CO en toda la aplicación. */
 export function formatTime(at: Date | string, tz: string): string {
-  const p = partsIn(typeof at === 'string' ? new Date(at) : at, tz)
-  const h12 = p.h % 12 === 0 ? 12 : p.h % 12
-  return `${h12}:${pad(p.mi)} ${p.h < 12 ? 'AM' : 'PM'}`
+  return format12(hhmm(at, tz))
 }
 
 const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
@@ -151,6 +149,24 @@ export function dayNumber(key: string): number {
 
 export function monthName(key: string): string {
   return MONTHS[keyToUtcDate(key).getUTCMonth()]!
+}
+
+/** Una fecha local de calendario, sin normalizar silenciosamente días inexistentes. */
+export function isDateKey(value: string | null): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T12:00:00Z`)
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+/** Meses de una semana, sin ocultar el cambio de mes ni de año. */
+export function weekMonthLabel(monday: string): string {
+  const sunday = addDays(monday, 6)
+  const first = monthName(monday)
+  const last = monthName(sunday)
+  const year = monday.slice(0, 4)
+  const lastYear = sunday.slice(0, 4)
+  if (year !== lastYear) return `${cap(first)} ${year} – ${last} ${lastYear}`
+  return `${cap(first)}${first === last ? '' : ` – ${last}`} ${year}`
 }
 
 /** Horas sugeridas cada 30 min. Hoy arranca en la próxima media hora; otros días a las 8:00. */

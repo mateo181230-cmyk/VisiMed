@@ -21,7 +21,7 @@ import { LINE_NAMES } from './types'
 
 export function RecommendationDetailsScreen() {
   const { recommendationId } = useParams()
-  const { path, doctors, recommendations, state, dismiss, visits, today, mode } = useIntelligence()
+  const { path, calendarPath, doctors, recommendations, state, dismiss, visits, today, mode } = useIntelligence()
   const [openModule, setOpenModule] = useState<string | null>(null)
   const [planning, setPlanning] = useState(false)
   const [skipping, setSkipping] = useState(false)
@@ -67,7 +67,7 @@ export function RecommendationDetailsScreen() {
       </section>
       <div className="intel-detail-actions intel-detail-actions--before-modules">
         {decision?.status === 'accepted' ? (
-          <Link to={path(`calendario?fecha=${planned?.day ?? r.day}`)} className="intel-button intel-button--primary">
+          <Link to={calendarPath(planned?.day ?? r.day)} className="intel-button intel-button--primary">
             <Check size={18} /> Ver visita programada
           </Link>
         ) : decision?.status === 'dismissed' ? (

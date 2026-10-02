@@ -114,7 +114,7 @@ export function TrainingHome() {
                           <span className={clsx('rounded-md px-2 py-0.5 text-xs font-bold', TONE_CLASS[pill.tone])}>
                             {pill.text}
                           </span>
-                          {s.progress.best !== null && s.progress.best !== undefined && (
+                          {s.difficulty !== 'basico' && s.progress.best !== null && s.progress.best !== undefined && (
                             <span className="text-xs font-semibold text-muted tabular-nums">
                               Mejor {s.progress.best}/30
                             </span>

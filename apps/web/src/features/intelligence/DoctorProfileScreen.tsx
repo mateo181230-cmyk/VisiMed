@@ -71,7 +71,7 @@ export function DoctorProfileScreen() {
           <h2>Aún no hay contexto de {LINE_NAMES[line]}</h2>
           <p>Hace falta una primera conversación sobre esta línea.</p>
           <IntelButton onClick={() => setPlanning(true)}>
-            <CalendarPlus size={18} /> Planear visita
+            <CalendarPlus size={18} /> Programar visita
           </IntelButton>
         </section>
       ) : (
@@ -82,7 +82,7 @@ export function DoctorProfileScreen() {
           </section>
           <div className="intel-detail-actions intel-detail-actions--before-modules">
             <IntelButton onClick={() => setPlanning(true)}>
-              <CalendarPlus size={18} /> Planear visita
+              <CalendarPlus size={18} /> Programar visita
             </IntelButton>
           </div>
           <MobileAccordion

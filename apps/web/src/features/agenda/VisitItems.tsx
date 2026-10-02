@@ -126,7 +126,7 @@ export function VisitRowItem({
       onClick={onOpen}
       className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left active:bg-canvas"
     >
-      <span className="w-[74px] shrink-0 text-[15px] font-semibold tabular-nums">
+      <span className="w-[92px] shrink-0 text-sm font-semibold whitespace-nowrap tabular-nums">
         {formatTime(visit.scheduled_at, tz)}
       </span>
       <span

@@ -379,7 +379,7 @@ describe("Hoja de la ficha", () => {
     });
     open({ vm: agendaOf([v]).vm(v), report: null, at: v.finished_at! });
     expect(
-      screen.getByText(/No contestaste\. Te llamamos de nuevo a las 10:20 AM/),
+      screen.getByText(/No contestaste\. Te llamamos de nuevo a las 10:20 a. m./),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Confirmar/ }),
@@ -400,8 +400,12 @@ describe("Hoja de la ficha", () => {
       screen.getByText(/Tienes el resumen pendiente por escrito/),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Escribir resumen" }));
+    const summary = screen.getByRole("textbox", { name: "Resumen de la visita" });
+    expect(summary).toHaveValue("");
+    expect(summary).toHaveAccessibleDescription(/Producto.*Objetivo.*Reacción.*Compromiso.*Próximo paso/);
+    expect(screen.getByText(/Si no hubo un acuerdo, indícalo/)).toBeInTheDocument();
     await user.type(
-      screen.getByRole("textbox", { name: "Nuevo valor" }),
+      summary,
       "Presenté ESOMED; pidió la ficha técnica.",
     );
     await user.click(screen.getByRole("button", { name: "Guardar" }));

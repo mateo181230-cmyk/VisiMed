@@ -10,10 +10,11 @@ import httpx
 import pytest
 from sqlalchemy import select
 
+from uno import clock
 from uno.config import Settings
 from uno.modules.training import pal
 from uno.modules.training.content import load_catalog
-from uno.modules.training.models import TrainingScenarioVersion
+from uno.modules.training.models import PracticeAttempt, TrainingScenarioVersion
 from uno.modules.training.provider import (
     PAL_PREFIX,
     ConversationRequest,
@@ -22,7 +23,7 @@ from uno.modules.training.provider import (
     transcript_from_conversation,
 )
 
-from .conftest import Env
+from .conftest import Env, make_user
 
 
 class FakeTavus:
@@ -35,6 +36,7 @@ class FakeTavus:
             "p_ajeno": {"pal_id": "p_ajeno", "pal_name": "Feria Jetour · Gloria"},
         }
         self.conversation_status = 200
+        self.delete_status = 204
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content) if request.content else None
@@ -64,6 +66,8 @@ class FakeTavus:
             if request.method == "GET":
                 return httpx.Response(200, json=self.pals[pal_id])
             if request.method == "DELETE":
+                if self.delete_status != 204:
+                    return httpx.Response(self.delete_status, json={"message": "temporary failure"})
                 del self.pals[pal_id]
                 return httpx.Response(204)
         if request.method == "GET" and path == "/v2/conversations/c123":
@@ -278,3 +282,114 @@ async def test_apply_republishes_when_the_api_key_belongs_to_another_account(mak
         assert all(v.startswith("igual") for v in again.values()), again
         assert len([c for c in replacement.calls if c[:2] == ("POST", "/v2/pals")]) == 4
         assert "p_ajeno" in replacement.pals
+
+
+def scenario_version(pal_id: str, version: int, *, retired: bool) -> TrainingScenarioVersion:
+    return TrainingScenarioVersion(
+        scenario_slug="gastroenterologo_esceptico",
+        version=version,
+        content_hash="a" * 64,
+        prompt_version="v2",
+        tavus_pal_id=pal_id,
+        face_id="face",
+        voice_id="voice",
+        published_at=clock.now(),
+        retired_at=clock.now() if retired else None,
+    )
+
+
+async def test_cleanup_preserves_a_retired_pal_reused_by_a_current_version(make_env: Any) -> None:
+    tavus = FakeTavus()
+    provider = tavus.provider()
+    async with make_env(conversation_provider=provider) as env:
+        pal_id = await provider.create_pal({"pal_name": f"{PAL_PREFIX} · compartido"})
+        async with env.ctx.sessionmaker() as session:
+            session.add_all(
+                [
+                    scenario_version(pal_id, 1, retired=True),
+                    scenario_version(pal_id, 2, retired=False),
+                ]
+            )
+            await session.commit()
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 0
+        assert pal_id in tavus.pals
+        assert not [call for call in tavus.calls if call[0] == "DELETE"]
+        async with env.ctx.sessionmaker() as session:
+            versions = (await session.scalars(select(TrainingScenarioVersion))).all()
+            assert all(version.tavus_pal_id == pal_id for version in versions)
+
+
+@pytest.mark.parametrize("status", ["starting", "live"])
+async def test_cleanup_preserves_a_pal_used_by_any_retired_version_attempt(
+    make_env: Any, status: str
+) -> None:
+    tavus = FakeTavus()
+    provider = tavus.provider()
+    async with make_env(conversation_provider=provider) as env:
+        user_id = await make_user(env)
+        pal_id = await provider.create_pal({"pal_name": f"{PAL_PREFIX} · compartido"})
+        async with env.ctx.sessionmaker() as session:
+            first = scenario_version(pal_id, 1, retired=True)
+            second = scenario_version(pal_id, 2, retired=True)
+            session.add_all([first, second])
+            await session.flush()
+            session.add(
+                PracticeAttempt(
+                    user_id=user_id,
+                    scenario_slug=second.scenario_slug,
+                    version_id=second.id,
+                    content_hash=second.content_hash,
+                    status=status,
+                    provider="tavus",
+                    created_at=clock.now(),
+                )
+            )
+            await session.commit()
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 0
+        assert pal_id in tavus.pals
+        assert not [call for call in tavus.calls if call[0] == "DELETE"]
+
+
+async def test_cleanup_deletes_an_unused_shared_pal_once_and_clears_all_references(
+    make_env: Any,
+) -> None:
+    tavus = FakeTavus()
+    provider = tavus.provider()
+    async with make_env(conversation_provider=provider) as env:
+        pal_id = await provider.create_pal({"pal_name": f"{PAL_PREFIX} · compartido"})
+        async with env.ctx.sessionmaker() as session:
+            session.add_all(
+                [
+                    scenario_version(pal_id, 1, retired=True),
+                    scenario_version(pal_id, 2, retired=True),
+                ]
+            )
+            await session.commit()
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 1
+        assert pal_id not in tavus.pals and "p_ajeno" in tavus.pals
+        assert len([call for call in tavus.calls if call[0] == "DELETE"]) == 1
+        async with env.ctx.sessionmaker() as session:
+            versions = (await session.scalars(select(TrainingScenarioVersion))).all()
+            assert all(version.tavus_pal_id is None for version in versions)
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 0
+
+
+async def test_cleanup_keeps_references_after_remote_delete_failure_for_retry(
+    make_env: Any,
+) -> None:
+    tavus = FakeTavus()
+    provider = tavus.provider()
+    async with make_env(conversation_provider=provider) as env:
+        pal_id = await provider.create_pal({"pal_name": f"{PAL_PREFIX} · retirar"})
+        async with env.ctx.sessionmaker() as session:
+            session.add(scenario_version(pal_id, 1, retired=True))
+            await session.commit()
+        tavus.delete_status = 503
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 0
+        async with env.ctx.sessionmaker() as session:
+            stored_id = await session.scalar(select(TrainingScenarioVersion.tavus_pal_id))
+            assert stored_id == pal_id
+        assert pal_id in tavus.pals
+        tavus.delete_status = 204
+        assert await pal.cleanup(env.ctx, say=lambda _: None) == 1
+        assert pal_id not in tavus.pals

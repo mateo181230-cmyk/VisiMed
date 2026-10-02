@@ -10,6 +10,7 @@ import {
   suggestedSlots,
   tzOffsetMinutes,
   weekStart,
+  weekMonthLabel,
 } from './time'
 
 const BOG = 'America/Bogota'
@@ -31,11 +32,11 @@ describe('zona horaria de Bogotá (UTC−5, sin horario de verano)', () => {
     expect(localToUtc('2026-09-29', '23:30', BOG).toISOString()).toBe('2026-09-30T04:30:00.000Z')
   })
 
-  it('da formato de 12 horas como la maqueta', () => {
-    expect(formatTime('2026-09-29T15:30:00Z', BOG)).toBe('10:30 AM')
-    expect(formatTime('2026-09-29T05:05:00Z', BOG)).toBe('12:05 AM')
-    expect(formatTime('2026-09-29T17:00:00Z', BOG)).toBe('12:00 PM')
-    expect(formatTime('2026-09-29T20:15:00Z', BOG)).toBe('3:15 PM')
+  it('da formato de 12 horas con la convención es-CO', () => {
+    expect(formatTime('2026-09-29T15:30:00Z', BOG)).toBe('10:30 a. m.')
+    expect(formatTime('2026-09-29T05:05:00Z', BOG)).toBe('12:05 a. m.')
+    expect(formatTime('2026-09-29T17:00:00Z', BOG)).toBe('12:00 p. m.')
+    expect(formatTime('2026-09-29T20:15:00Z', BOG)).toBe('3:15 p. m.')
   })
 })
 
@@ -66,6 +67,12 @@ describe('días y semanas', () => {
     expect(weekStart('2026-09-29')).toBe('2026-09-28') // martes
     expect(weekStart('2026-09-28')).toBe('2026-09-28') // lunes
     expect(weekStart('2026-10-04')).toBe('2026-09-28') // domingo
+  })
+
+  it('nombra ambos meses y años cuando la semana los cruza', () => {
+    expect(weekMonthLabel('2026-09-28')).toBe('Septiembre – octubre 2026')
+    expect(weekMonthLabel('2026-12-28')).toBe('Diciembre 2026 – enero 2027')
+    expect(weekMonthLabel('2026-10-05')).toBe('Octubre 2026')
   })
 
   it('letras del día', () => {

@@ -110,7 +110,7 @@ export function ScheduleSheet({ open, onClose, initialDay, agenda }: Props) {
     <Sheet
       open={open}
       onClose={onClose}
-      title={creating ? 'Nuevo médico' : 'Agendar visita'}
+      title={creating ? 'Nuevo médico' : 'Programar visita'}
       footer={
         creating ? undefined : (
           <Button size="lg" block disabled={!canSave} onClick={() => void save()}>

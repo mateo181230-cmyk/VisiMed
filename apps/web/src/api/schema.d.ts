@@ -596,6 +596,11 @@ export interface components {
         CompetencyOut: {
             /** Comment */
             comment: string;
+            /**
+             * Evaluated
+             * @default true
+             */
+            evaluated: boolean;
             /** Id */
             id: string;
             /** Max */

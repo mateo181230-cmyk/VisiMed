@@ -1,27 +1,24 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { addDays, dayNumber, format12, weekStart } from '../../lib/time'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { addDays, dayNumber, format12, isDateKey, weekStart } from '../../lib/time'
 import { useIntelligence } from './IntelligenceProvider'
 import { EmptyState, IntelButton, Modal, ScheduleDialog } from './components'
 import { dayName, endTime, shortDate } from './model'
 import type { CalendarVisit } from './types'
 
 export function IntelligenceCalendar() {
-  const { mode, visits, path, removeVisit, doctors, today } = useIntelligence()
+  const { mode, visits, path, calendarPath, coreAgenda, removeVisit, doctors, today } = useIntelligence()
   const [params, setParams] = useSearchParams()
   const rawDay = params.get('fecha')
-  const parsedDay = rawDay && /^\d{4}-\d{2}-\d{2}$/.test(rawDay) ? new Date(`${rawDay}T12:00:00Z`) : null
-  const selectedDay =
-    parsedDay && Number.isFinite(parsedDay.getTime()) && parsedDay.toISOString().slice(0, 10) === rawDay
-      ? rawDay!
-      : today
+  const selectedDay = isDateKey(rawDay) ? rawDay : today
   const [planning, setPlanning] = useState(false)
   const [openedVisit, setOpenedVisit] = useState<CalendarVisit | null>(null)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart(selectedDay), i))
   const visibleVisits = visits.filter((v) => v.day === selectedDay).sort((a, b) => a.time.localeCompare(b.time))
   const doctor = doctors.find((d) => d.id === openedVisit?.doctorId)
   const selectDay = (day: string) => setParams({ fecha: day })
+  if (coreAgenda) return <Navigate to={calendarPath(selectedDay)} replace />
   return (
     <>
       <header className="intel-mobile-heading intel-mobile-heading--action">
@@ -33,7 +30,7 @@ export function IntelligenceCalendar() {
           <button
             type="button"
             className="intel-icon-button"
-            aria-label="Planear visita"
+            aria-label="Programar visita"
             onClick={() => setPlanning(true)}
           >
             <Plus size={24} />

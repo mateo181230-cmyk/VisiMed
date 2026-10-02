@@ -1,5 +1,5 @@
 import { Check, Pencil } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Sheet } from "../../components/Sheet";
 import { useToast } from "../../components/Toast";
 import { Button, Chip, Notice } from "../../components/ui";
@@ -117,21 +117,39 @@ function TextEditor({
   def,
   initial,
   onSave,
+  summary = false,
 }: {
   def: Extract<FieldDef["editor"], { kind: "text" }>;
   initial: string;
   onSave: (value: string | null) => void;
+  summary?: boolean;
 }) {
   const [text, setText] = useState(initial);
+  const guideId = useId();
   return (
     <div className="space-y-3">
+      {summary && (
+        <div id={guideId} className="space-y-2 rounded-control bg-brand-50 p-3.5 text-sm text-navy">
+          <p className="font-semibold">Cuenta lo que ocurrió en la visita:</p>
+          <ul className="list-disc space-y-1 pl-4">
+            <li><strong>Producto o línea:</strong> qué presentaste.</li>
+            <li><strong>Objetivo:</strong> qué buscabas lograr.</li>
+            <li><strong>Reacción:</strong> qué dijo, preguntó o le interesó al médico.</li>
+            <li><strong>Compromiso:</strong> qué acordaron y quién lo hará.</li>
+            <li><strong>Próximo paso:</strong> qué sigue y la fecha, si la acordaron.</li>
+          </ul>
+          <p>Si no hubo un acuerdo, indícalo. Incluye solo lo que ocurrió.</p>
+        </div>
+      )}
       <textarea
         autoFocus
         value={text}
         maxLength={def.max}
         rows={def.multiline ? 5 : 3}
         onChange={(e) => setText(e.target.value)}
-        aria-label="Nuevo valor"
+        aria-label={summary ? "Resumen de la visita" : "Nuevo valor"}
+        aria-describedby={summary ? guideId : undefined}
+        placeholder={summary ? "Escribe aquí el resumen de tu visita…" : undefined}
         className="w-full rounded-control border border-line bg-white p-3.5 text-base focus:border-brand"
       />
       <p className="text-right text-xs text-muted">
@@ -292,6 +310,7 @@ export function ReportSheet({ item, tz, onClose }: Props) {
     return (
       <TextEditor
         def={e}
+        summary={def.key === "summary"}
         initial={typeof current === "string" ? current : ""}
         onSave={(value) => void save(def.key, value)}
       />

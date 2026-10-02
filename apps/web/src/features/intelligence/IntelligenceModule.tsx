@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { BottomNav } from "../../components/BottomNav";
 import { ProfileLink } from "../../components/ProfileLink";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { useAuth } from "../auth/AuthProvider";
 import { usePwaUpdate } from '../../pwa';
 import { IntelligenceProvider, useIntelligence } from "./IntelligenceProvider";
@@ -26,6 +27,7 @@ function IntelligenceLayout({ preview }: { preview: boolean }) {
   const admin = !preview && user?.role === 'admin';
   const home = pathname === path() || pathname === path("recomendaciones");
   const options = pathname === path("opciones");
+  const coreHeader = home && !preview;
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [pathname]);
@@ -63,7 +65,9 @@ function IntelligenceLayout({ preview }: { preview: boolean }) {
       <a href="#intel-main" className="intel-skip-link">
         Saltar al contenido
       </a>
-      <header className="intel-mobile-header">
+      {coreHeader ? (
+        <ScreenHeader title="Recomendaciones" subtitle="Tu siguiente visita, en un vistazo." right={<ProfileLink />} />
+      ) : <header className="intel-mobile-header">
         {home ? (
           <Link
             to={path()}
@@ -101,7 +105,7 @@ function IntelligenceLayout({ preview }: { preview: boolean }) {
           )}
           {!preview && <ProfileLink />}
         </div>
-      </header>
+      </header>}
       <main id="intel-main" className="intel-main" tabIndex={-1}>
         {needRefresh && <div role="status"><p>Hay una versión nueva de UNO.</p><button type="button" className="intel-button intel-button--secondary" onClick={update}>Actualizar aplicación</button></div>}
         {loading && <p role="status">Consultando visitas y reportes…</p>}
@@ -117,12 +121,19 @@ function IntelligenceLayout({ preview }: { preview: boolean }) {
             </button>
           </div>
         )}
+        {coreHeader && (
+          <div className="mb-4 flex min-h-11 items-center justify-end">
+            <Link to={path("opciones")} className="intel-text-link inline-flex items-center gap-2" aria-label="Más opciones del módulo">
+              Más opciones <MoreHorizontal size={20} />
+            </Link>
+          </div>
+        )}
         {mode === "live" && (
           <button type="button" className="intel-text-link" onClick={refresh}>
             Actualizar reportes
           </button>
         )}
-        <Outlet />
+        <Outlet context={{ coreHeader }} />
       </main>
       {mode === "demo" && (
         <p className="intel-mobile-demo-note">

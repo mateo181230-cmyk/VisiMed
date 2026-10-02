@@ -6,7 +6,7 @@ import { useIntelligence } from './IntelligenceProvider'
 import { MobileAccordion } from './MobileAccordion'
 
 export function IntelligenceOptionsScreen() {
-  const { path, mode, setMode, scope, setScope, reset, representatives } = useIntelligence()
+  const { path, calendarPath, coreAgenda, mode, setMode, scope, setScope, reset, representatives } = useIntelligence()
   const { user } = useAuth()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const teamView = user?.role === 'admin' || user?.role === 'manager' || path().endsWith('/demo')
@@ -19,8 +19,8 @@ export function IntelligenceOptionsScreen() {
     },
     {
       segment: 'calendario',
-      title: mode === 'demo' ? 'Calendario de ejemplo' : 'Calendario de visitas',
-      description: 'Ver las visitas que programaste aquí',
+      title: coreAgenda ? 'Agenda' : mode === 'demo' ? 'Calendario de ejemplo' : 'Calendario de visitas',
+      description: coreAgenda ? 'Ver todas tus visitas programadas' : 'Ver las visitas que programaste aquí',
       icon: CalendarDays,
     },
     {
@@ -63,7 +63,7 @@ export function IntelligenceOptionsScreen() {
           </Link>
         )}
         {modules.map(({ segment, title, description, icon: Icon }) => (
-          <Link key={segment} to={path(segment)}>
+          <Link key={segment} to={segment === 'calendario' ? calendarPath() : path(segment)}>
             <span className="intel-module-icon">
               <Icon size={20} />
             </span>

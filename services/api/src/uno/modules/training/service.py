@@ -788,7 +788,7 @@ async def attempt_view(
         "created_at": attempt.created_at,
         "ended_at": attempt.ended_at,
         "error_code": attempt.error_code,
-        "evaluation": evaluation_row.result if evaluation_row else None,
+        "evaluation": evaluation.for_display(evaluation_row.result) if evaluation_row else None,
         "delta": (
             evaluation_row.total - previous
             if evaluation_row is not None and previous is not None

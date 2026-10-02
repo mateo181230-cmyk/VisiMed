@@ -14,23 +14,28 @@ export function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<Element | null>(null)
+  const close = useRef(onClose)
+
+  useEffect(() => {
+    close.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
     previouslyFocused.current = document.activeElement
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') close.current()
     }
     document.addEventListener('keydown', onKey)
     const { overflow } = document.body.style
     document.body.style.overflow = 'hidden'
-    panel.current?.focus()
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus()
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = overflow
       if (previouslyFocused.current instanceof HTMLElement) previouslyFocused.current.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
   return (

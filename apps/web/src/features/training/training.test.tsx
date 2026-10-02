@@ -160,8 +160,8 @@ const evaluation: NonNullable<PracticeAttempt['evaluation']> = {
   max: 30,
   band: { level: 'bueno', label: 'Buen desempeño con oportunidades de mejora' },
   competencies: [
-    { id: 'apertura', name: 'Apertura', score: 5, max: 5, comment: 'Abriste con un saludo profesional.' },
-    { id: 'sondeo', name: 'Sondeo', score: 3, max: 5, comment: 'Faltó profundizar.' },
+    { id: 'apertura', name: 'Apertura', score: 5, max: 5, comment: 'Abriste con un saludo profesional.', evaluated: true },
+    { id: 'sondeo', name: 'Sondeo', score: 3, max: 5, comment: 'Faltó profundizar.', evaluated: true },
   ],
   critical_errors: [{ id: 'exagera_beneficios', text: 'Exageró beneficios o hizo afirmaciones absolutas', kind: 'compliance' }],
   case_checks: [{ id: 'detecto_perfil', text: '¿Detectó el perfil?', value: 'parcial' }],
@@ -222,6 +222,13 @@ describe('Entrenar · inicio', () => {
 })
 
 describe('Entrenar · escenario', () => {
+  it('explica la presentación inicial sin prometer objeciones en básico', async () => {
+    api.scenario.mockResolvedValue(ok({ ...scenario(), difficulty: 'basico', difficulty_label: 'Básico' }))
+    renderAt('/entrenar/medico_general_indiferenciado')
+    expect(await screen.findByText(/Practica un saludo, una presentación breve del producto y un cierre/)).toBeInTheDocument()
+    expect(screen.queryByText(/pide brevedad, objeta/)).not.toBeInTheDocument()
+  })
+
   it('no abre una conversación de pago si la videollamada no puede cargar', async () => {
     const doctor = { ...fakeDoctor, mode: 'tavus' as const }
     api.scenario.mockResolvedValue(ok(scenario(doctor, true)))
@@ -287,6 +294,26 @@ describe('Entrenar · escenario', () => {
 })
 
 describe('Entrenar · visita y resultado', () => {
+  it('básico no presenta como calificaciones las técnicas que no se evalúan', async () => {
+    api.attempt.mockResolvedValue(ok(attempt({ status: 'evaluated', delta: 3, evaluation: {
+      ...evaluation,
+      improvements: [],
+      competencies: [
+        { id: 'apertura', name: 'Apertura', score: 4, max: 5, comment: 'Saludo breve.', evaluated: true },
+        { id: 'sondeo', name: 'Sondeo', score: 5, max: 5, comment: 'Se trabaja en los niveles siguientes.', evaluated: false },
+      ],
+    } })))
+    renderAt('/entrenar/intento/a1')
+    expect(await screen.findByText('No se evalúa en este nivel')).toBeInTheDocument()
+    expect(screen.getByRole('meter', { name: 'Apertura: 4 de 5' })).toBeInTheDocument()
+    expect(screen.queryByRole('meter', { name: /Sondeo/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('5/5')).not.toBeInTheDocument()
+    expect(screen.queryByText('/30')).not.toBeInTheDocument()
+    expect(screen.queryByText(/frente al intento anterior/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Puntaje total mínimo/)).not.toBeInTheDocument()
+    expect(screen.getByText('Exageró beneficios o hizo afirmaciones absolutas')).toBeInTheDocument()
+  })
+
   it('en modo de prueba, «Terminar visita» cierra y muestra la evaluación', async () => {
     api.attempt
       .mockResolvedValueOnce(ok(attempt()))

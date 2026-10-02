@@ -133,6 +133,15 @@ describe('Botones del dashboard administrativo', () => {
 });
 
 describe("Acceso y navegación móvil", () => {
+  it("la agenda real de Recomendaciones abre la agenda principal y conserva la fecha", async () => {
+    session.status = "authed";
+    session.user = { id: "rep", role: "rep", full_name: "Visitador de prueba", phone: "+57000", timezone: "America/Bogota" };
+    renderApp("/inteligencia/calendario?fecha=2026-10-04");
+    await waitFor(() => expect(window.location.pathname).toBe("/agenda"));
+    expect(window.location.search).toBe("?fecha=2026-10-04");
+    expect(await screen.findByRole("heading", { name: "Domingo 4" })).toBeInTheDocument();
+  });
+
   it("el ejemplo abre sin login y el módulo real conserva la autenticación", async () => {
     const app = renderApp();
     expect(
@@ -335,7 +344,7 @@ describe("Directorio y evidencia por línea", () => {
     expect(
       screen.queryByText(/Pidió la ficha técnica/),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Planear visita" }));
+    await user.click(screen.getByRole("button", { name: "Programar visita" }));
     const dialog = screen.getByRole("dialog", { name: "Planear una visita" });
     expect(within(dialog).getByLabelText("Línea")).toHaveValue("OSTRU");
     await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));

@@ -173,6 +173,7 @@ async def expire_reports(ctx: AppContext, now: datetime) -> dict[str, int]:
 
 async def plan_reminders_and_checkins(ctx: AppContext, now: datetime) -> dict[str, int]:
     """Una llamada antes de la cita y un chequeo tras 30 min desde «Llegué»."""
+    assert ctx.voice_provider is not None
     created: Counter[str] = Counter()
     async with ctx.sessionmaker() as session:
         rows = (
@@ -195,7 +196,11 @@ async def plan_reminders_and_checkins(ctx: AppContext, now: datetime) -> dict[st
                 key = f"{visit.id}:{visit.scheduled_at.isoformat()}"
                 prior = await session.scalar(select(Call.id).where(Call.reminder_key == key))
             else:
-                if not visit.arrived_at or now < visit.arrived_at + timedelta(minutes=30):
+                if (
+                    not visit.arrived_at
+                    or now < visit.arrived_at + timedelta(minutes=30)
+                    or report_expired(visit, now)
+                ):
                     continue
                 key = None
                 prior = await session.scalar(
@@ -204,7 +209,6 @@ async def plan_reminders_and_checkins(ctx: AppContext, now: datetime) -> dict[st
                     .where(
                         CallVisit.visit_id == visit.id,
                         Call.purpose == "visit_checkin",
-                        Call.status != "cancelled",
                     )
                 )
             if prior is not None:

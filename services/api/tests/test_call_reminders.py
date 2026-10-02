@@ -4,11 +4,12 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from sqlalchemy import select
 
 from uno import clock
 from uno.modules.agenda.models import Visit
 from uno.modules.calls import service
-from uno.modules.calls.models import VisitReport
+from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.calls.provider import FakeOutcome, ProviderError, Turn, canned_data
 
 from .conftest import rep_token
@@ -124,6 +125,58 @@ async def test_checkin_at_30_minutes_ongoing_waits_for_finished_then_new_notice(
         visit = await read_visit(env, visit_id)
         assert visit.report_notified_at == notified
         assert visit.report_due_at == notified + timedelta(minutes=30)
+
+
+async def test_expired_checkin_stays_cancelled_and_next_visit_gets_its_summary(make_env: Any):
+    async with calls_env(make_env) as env:
+        token = await rep_token(env)
+        visit_id = await schedule(env, token, clock.now())
+        await post_sync(env, token, [arrived_event(visit_id, None)])
+        fake(env)._script = lambda req: FakeOutcome(kind="no_answer")
+        await cycle(env, advance=30 * 60)
+        await cycle(env, advance=20)
+        assert (await all_calls(env))[0].status == "queued"
+
+        # El trabajador vuelve después de vencer el plazo y de la ventana de reunión ocupada.
+        env.clock.advance(hours=3)
+        (next_visit_id,) = await finish_visits(env, token)
+        fake(env)._script = lambda req: FakeOutcome(data_collection=canned_data())
+        for _ in range(4):
+            await cycle(env, advance=21)
+
+        calls = await all_calls(env)
+        checkins = [call for call in calls if call.purpose == "visit_checkin"]
+        assert len(checkins) == 1
+        assert checkins[0].status == "cancelled"
+        assert (await read_visit(env, visit_id)).report_invalid_at is not None
+        assert [req.dynamic_variables["tipo_llamada"] for req in fake(env).requests] == [
+            "visit_checkin",
+            "summary",
+        ]
+        async with env.ctx.sessionmaker() as session:
+            assert await session.get(VisitReport, next_visit_id) is not None
+
+
+async def test_cancelled_checkin_is_not_recreated_on_later_cycles(make_env: Any):
+    async with calls_env(make_env) as env:
+        token = await rep_token(env)
+        visit_id = await schedule(env, token, clock.now())
+        await post_sync(env, token, [arrived_event(visit_id, None)])
+        env.clock.advance(minutes=30)
+        await service.plan_reminders_and_checkins(env.ctx, clock.now())
+        (call,) = await all_calls(env)
+        async with env.ctx.sessionmaker() as session:
+            stored = await session.get(Call, call.id)
+            assert stored is not None
+            stored.status = "cancelled"
+            link = await session.scalar(select(CallVisit).where(CallVisit.call_id == call.id))
+            assert link is not None
+            link.live = False
+            await session.commit()
+        for _ in range(3):
+            await cycle(env, advance=20)
+        assert len(await all_calls(env)) == 1
+        assert fake(env).requests == []
 
 
 @pytest.mark.parametrize("mode", ["written", "deferred"])

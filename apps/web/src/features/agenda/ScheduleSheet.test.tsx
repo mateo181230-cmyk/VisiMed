@@ -72,7 +72,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
     const { user, onClose } = renderSheet()
     await user.click(screen.getByRole('button', { name: /Dra\. Laura Méndez/ })) // 1
     const hours = screen.getByRole('group', { name: 'Hora de la visita' })
-    await user.click(within(hours).getByRole('button', { name: '9:00 AM' })) // 2 (otro día → arranca a las 8:00)
+    await user.click(within(hours).getByRole('button', { name: '9:00 a. m.' })) // 2 (otro día → arranca a las 8:00)
     await user.click(screen.getByRole('button', { name: 'Guardar' })) // 3
 
     await waitFor(() => expect(onClose).toHaveBeenCalled())
@@ -81,7 +81,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
     expect(event!.payload).toMatchObject({
       doctor_id: 'd-laura',
       line_ids: ['l-gastru'], // la línea por defecto del médico
-      scheduled_at: '2026-09-30T14:00:00.000Z', // 9:00 AM en Bogotá = 14:00 UTC
+      scheduled_at: '2026-09-30T14:00:00.000Z', // 9:00 a. m. en Bogotá = 14:00 UTC
       planned_by: 'rep',
     })
     expect(event!.visit_id).toBeTruthy()
@@ -92,7 +92,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: /Dr\. Carlos Gómez/ }))
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: '8:00 AM' }))
+    await user.click(screen.getByRole('button', { name: '8:00 a. m.' }))
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled()
   })
 
@@ -106,7 +106,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
   it('permite hasta 2 líneas y la primera es la principal', async () => {
     const { user } = renderSheet()
     await user.click(screen.getByRole('button', { name: /Dra\. Laura Méndez/ }))
-    await user.click(screen.getByRole('button', { name: '8:30 AM' }))
+    await user.click(screen.getByRole('button', { name: '8:30 a. m.' }))
     await user.click(
       within(screen.getByRole('group', { name: 'Línea de la visita' })).getByRole('button', { name: 'RESPI' }),
     )
@@ -122,7 +122,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
       institution_id: null,
       primary_line_id: 'l-respi',
       line_ids: ['l-respi'],
-      scheduled_at: '2026-09-30T13:00:00.000Z', // 8:00 AM Bogotá
+      scheduled_at: '2026-09-30T13:00:00.000Z', // 8:00 a. m. Bogotá
       status: 'scheduled',
       planned_by: 'rep',
       not_done_reason: null,
@@ -130,7 +130,7 @@ describe('Agendar una visita (doc 02 T3.2)', () => {
     }
     const { user } = renderSheet(agenda([existing]))
     await user.click(screen.getByRole('button', { name: /Dra\. Laura Méndez/ }))
-    await user.click(screen.getByRole('button', { name: '8:00 AM' }))
+    await user.click(screen.getByRole('button', { name: '8:00 a. m.' }))
     expect(screen.getByText(/Ya tienes una visita a esa hora/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled()
   })
@@ -146,7 +146,7 @@ describe('Alta rápida de médico (doc 02 T3.4)', () => {
 
     // Vuelve al agendado con el médico ya elegido.
     expect(await screen.findByText('Dr. Pedro Ríos')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '10:00 AM' }))
+    await user.click(screen.getByRole('button', { name: '10:00 a. m.' }))
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
 

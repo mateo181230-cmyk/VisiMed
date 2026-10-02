@@ -179,6 +179,7 @@ class CompetencyOut(BaseModel):
     score: int
     max: int
     comment: str
+    evaluated: bool = True
 
 
 class CriticalErrorOut(BaseModel):

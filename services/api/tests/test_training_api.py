@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncIterator
+from copy import deepcopy
 from datetime import timedelta
 from typing import Any
 
@@ -15,7 +16,7 @@ from sqlalchemy import func, select
 
 from uno.events import DomainEvent
 from uno.modules.training.content import load_catalog
-from uno.modules.training.models import PracticeAttempt, PracticeTurn
+from uno.modules.training.models import PracticeAttempt, PracticeEvaluation, PracticeTurn
 from uno.modules.training.provider import FakeProvider, ProviderError
 from uno.modules.training.service import run_training_cycle
 
@@ -63,6 +64,46 @@ async def end(env: Env, token: str, attempt_id: str) -> dict[str, Any]:
     r = await env.client.post(f"/v1/training/attempts/{attempt_id}/end", headers=bearer(token))
     assert r.status_code == 200, r.text
     return r.json()
+
+
+async def test_legacy_basic_evaluation_gets_flags_without_rewriting_scores(
+    fake: tuple[Env, FakeProvider],
+) -> None:
+    env, _provider = fake
+    token = await rep_token(env)
+    await accept(env, token)
+    attempt = await start(env, token)
+    await end(env, token, attempt["id"])
+    attempt_id = uuid.UUID(attempt["id"])
+    async with env.ctx.sessionmaker() as session:
+        stored = (
+            await session.execute(
+                select(PracticeEvaluation).where(PracticeEvaluation.attempt_id == attempt_id)
+            )
+        ).scalar_one()
+        legacy = deepcopy(stored.result)
+        for competency in legacy["competencies"]:
+            competency.pop("evaluated", None)
+        stored.result = legacy
+        original_total = stored.total
+        await session.commit()
+
+    response = await env.client.get(f"/v1/training/attempts/{attempt_id}", headers=bearer(token))
+    assert response.status_code == 200
+    result = response.json()["evaluation"]
+    assert result["total"] == original_total
+    assert {c["id"] for c in result["competencies"] if c["evaluated"]} == {
+        "apertura",
+        "argumentacion",
+        "cierre",
+    }
+    async with env.ctx.sessionmaker() as session:
+        stored = (
+            await session.execute(
+                select(PracticeEvaluation).where(PracticeEvaluation.attempt_id == attempt_id)
+            )
+        ).scalar_one()
+        assert stored.result == legacy
 
 
 # ------------------------------------------------------------------ sin médico

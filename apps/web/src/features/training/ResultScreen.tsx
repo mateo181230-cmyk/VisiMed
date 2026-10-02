@@ -11,6 +11,15 @@ const WAITING = new Set(['starting', 'live', 'ended'])
 const CHECK_LABEL: Record<string, string> = { si: 'Sí', parcial: 'Parcialmente', no: 'No' }
 
 function CompetencyBar({ c }: { c: PracticeEvaluation['competencies'][number] }) {
+  if (c.evaluated === false) {
+    return (
+      <li className="space-y-1.5 px-4 py-3">
+        <p className="font-semibold">{c.name}</p>
+        <p className="text-sm font-semibold text-muted">No se evalúa en este nivel</p>
+        <p className="text-sm text-muted">{c.comment}</p>
+      </li>
+    )
+  }
   const pct = (c.score / c.max) * 100
   return (
     <li className="space-y-1.5 px-4 py-3">
@@ -41,10 +50,13 @@ function CompetencyBar({ c }: { c: PracticeEvaluation['competencies'][number] })
 function Evaluation({ attempt, evaluation }: { attempt: PracticeAttempt; evaluation: PracticeEvaluation }) {
   const tone = BAND_TONE[evaluation.band.level] ?? 'muted'
   const t = evaluation.training
+  const partialRubric = evaluation.competencies.some((c) => c.evaluated === false)
   return (
     <div className="space-y-6">
       <Card className="space-y-3 p-5">
-        <div className="flex items-end justify-between gap-4">
+        {partialRubric ? (
+          <p className="text-lg font-bold">Resultado del nivel básico</p>
+        ) : <div className="flex items-end justify-between gap-4">
           <p className="text-5xl leading-none font-extrabold tracking-tight tabular-nums">
             {evaluation.total}
             <span className="text-2xl font-bold text-muted">/{evaluation.max}</span>
@@ -56,7 +68,7 @@ function Evaluation({ attempt, evaluation }: { attempt: PracticeAttempt; evaluat
                 : `${attempt.delta > 0 ? `+${attempt.delta}` : attempt.delta} frente al intento anterior`}
             </span>
           )}
-        </div>
+        </div>}
         <span className={clsx('inline-block rounded-md px-2.5 py-1 text-sm font-bold', TONE_CLASS[tone])}>
           {evaluation.band.label}
         </span>
@@ -78,7 +90,7 @@ function Evaluation({ attempt, evaluation }: { attempt: PracticeAttempt; evaluat
         </p>
         <p className="text-[15px]">{t.diagnosis}</p>
         <ul className="space-y-1.5">
-          {t.requirements.map((r) => (
+          {t.requirements.filter((r) => !partialRubric || r.id !== 'total').map((r) => (
             <li key={r.id} className="flex items-start gap-2 text-[15px]">
               {r.met ? (
                 <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-ok" aria-label="Cumplido" />
@@ -97,7 +109,7 @@ function Evaluation({ attempt, evaluation }: { attempt: PracticeAttempt; evaluat
         )}
       </Card>
 
-      {evaluation.improvements.length > 0 && (
+      {(evaluation.improvements.length > 0 || evaluation.critical_errors.length > 0) && (
         <section className="space-y-2">
           <SectionTitle>Mejora esto</SectionTitle>
           <Card className="space-y-2 p-4">

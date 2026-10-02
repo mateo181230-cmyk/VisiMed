@@ -393,6 +393,11 @@
             "title": "Comment",
             "type": "string"
           },
+          "evaluated": {
+            "default": true,
+            "title": "Evaluated",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "string"

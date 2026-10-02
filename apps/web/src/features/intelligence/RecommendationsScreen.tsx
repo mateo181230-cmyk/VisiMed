@@ -6,7 +6,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { format12 } from "../../lib/time";
 import { useIntelligence } from "./IntelligenceProvider";
 import { Avatar, EmptyState, IntelButton } from "./components";
@@ -15,7 +15,8 @@ import { shortDate } from "./model";
 import type { Recommendation } from "./types";
 
 export function RecommendationsScreen() {
-  const { path, recommendations, doctors, state, mode } = useIntelligence();
+  const coreHeader = useOutletContext<{ coreHeader: boolean } | undefined>()?.coreHeader ?? false;
+  const { path, calendarPath, recommendations, doctors, state, mode } = useIntelligence();
   const [planning, setPlanning] = useState<Recommendation | null>(null);
   const [scheduled, setScheduled] = useState<{
     name: string;
@@ -30,10 +31,10 @@ export function RecommendationsScreen() {
   ).length;
   return (
     <>
-      <header className="intel-mobile-heading">
+      {!coreHeader && <header className="intel-mobile-heading">
         <h1>Recomendaciones</h1>
         <p>Tu siguiente visita, en un vistazo.</p>
-      </header>
+      </header>}
       {scheduled && (
         <div className="intel-scheduled-notice" role="status">
           <Check size={18} />
@@ -41,7 +42,7 @@ export function RecommendationsScreen() {
             <strong>Visita programada</strong>
             <small>{scheduled.name}</small>
           </span>
-          <Link to={path(`calendario?fecha=${scheduled.day}`)}>Ver agenda</Link>
+          <Link to={calendarPath(scheduled.day)}>Ver agenda</Link>
         </div>
       )}
       {mode === "empty" ? (
@@ -121,7 +122,7 @@ export function RecommendationsScreen() {
           <h2>Por ahora, todo revisado</h2>
           <p>Las nuevas sugerencias aparecerán aquí.</p>
           <Link
-            to={path("calendario")}
+            to={calendarPath()}
             className="intel-button intel-button--secondary"
           >
             Ver visitas programadas
@@ -129,7 +130,7 @@ export function RecommendationsScreen() {
         </div>
       )}
       {accepted > 0 && next && (
-        <Link to={path("calendario")} className="intel-scheduled-link">
+        <Link to={calendarPath()} className="intel-scheduled-link">
           <CalendarDays size={16} /> {accepted}{" "}
           {accepted === 1 ? "visita programada" : "visitas programadas"}{" "}
           <ChevronRight size={16} />

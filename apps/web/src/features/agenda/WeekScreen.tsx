@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { ProfileLink } from '../../components/ProfileLink'
 import { SyncPill } from '../../components/SyncPill'
@@ -12,7 +12,8 @@ import {
   dayNumber,
   formatDayTitle,
   formatTime,
-  monthName,
+  isDateKey,
+  weekMonthLabel,
   todayKey,
   weekStart,
 } from '../../lib/time'
@@ -22,12 +23,19 @@ import { UnsentMark } from './VisitItems'
 import { VisitSheet } from './VisitSheet'
 import { NOT_DONE_LABEL, type VisitVM, useAgenda } from './useAgenda'
 
-/** Agenda (doc 01 §8.3, S8): semana de lunes a sábado y línea de tiempo del día elegido. */
+/** Agenda: semana completa y línea de tiempo del día elegido. */
 export function WeekScreen() {
   const agenda = useAgenda()
   const now = useNow(60_000)
   const today = todayKey(agenda.tz, now)
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [params, setParams] = useSearchParams()
+  const requestedDay = params.get('fecha')
+  const selectedDay = isDateKey(requestedDay) ? requestedDay : null
+  const setSelectedDay = (next: string) => setParams((current) => {
+    const updated = new URLSearchParams(current)
+    updated.set('fecha', next)
+    return updated
+  })
   const [scheduling, setScheduling] = useState(false)
   const [opened, setOpened] = useState<VisitVM | null>(null)
 
@@ -35,14 +43,14 @@ export function WeekScreen() {
 
   const day = selectedDay ?? today
   const monday = weekStart(day)
-  const days = useMemo(() => Array.from({ length: 6 }, (_, i) => addDays(monday, i)), [monday])
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(monday, i)), [monday])
   const visits = (agenda.byDay.get(day) ?? []).map((v) => agenda.vm(v))
 
   return (
     <>
       <ScreenHeader
         title="Agenda"
-        subtitle={`${monthName(monday).replace(/^./, (c) => c.toUpperCase())} ${monday.slice(0, 4)}`}
+        subtitle={weekMonthLabel(monday)}
         right={
           <>
             <SyncPill />
@@ -63,7 +71,7 @@ export function WeekScreen() {
           </span>
           <ChevronRight size={17} className="text-brand" />
         </Link>
-        <nav aria-label="Semana" className="flex items-center gap-1">
+        <nav aria-label="Semana" className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-1">
           <button
             type="button"
             aria-label="Semana anterior"
@@ -72,7 +80,16 @@ export function WeekScreen() {
           >
             <ChevronLeft size={22} />
           </button>
-          <ul className="grid flex-1 grid-cols-6 gap-1.5">
+          <span className="text-center text-sm text-muted">Del {dayNumber(monday)} al {dayNumber(days[6]!)}</span>
+          <button
+            type="button"
+            aria-label="Semana siguiente"
+            onClick={() => setSelectedDay(addDays(day, 7))}
+            className="grid size-11 shrink-0 place-items-center rounded-full text-muted active:bg-line/60"
+          >
+            <ChevronRight size={22} />
+          </button>
+          <ul className="col-span-3 row-start-2 grid min-w-0 grid-cols-7 gap-1.5">
             {days.map((d) => {
               const count = (agenda.byDay.get(d) ?? []).filter((v) => v.status !== 'not_done').length
               const active = d === day
@@ -105,14 +122,6 @@ export function WeekScreen() {
               )
             })}
           </ul>
-          <button
-            type="button"
-            aria-label="Semana siguiente"
-            onClick={() => setSelectedDay(addDays(day, 7))}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-muted active:bg-line/60"
-          >
-            <ChevronRight size={22} />
-          </button>
         </nav>
 
         <h2 className="px-1 text-xl font-bold">
@@ -126,12 +135,12 @@ export function WeekScreen() {
           <Card className="p-5 text-center text-muted">Sin visitas este día.</Card>
         ) : (
           <ol className="relative">
-            <span aria-hidden className="absolute top-3 bottom-3 left-[92px] w-px bg-brand/25" />
+            <span aria-hidden className="absolute top-3 bottom-3 left-[98px] w-px bg-brand/25 min-[375px]:left-[110px]" />
             {visits.map((vm) => {
               const cancelled = vm.visit.status === 'not_done'
               return (
-                <li key={vm.visit.id} className="relative flex items-stretch gap-3 py-1.5">
-                  <span className="w-[76px] shrink-0 pt-4 text-[15px] font-semibold tabular-nums">
+                <li key={vm.visit.id} className="relative flex items-stretch gap-2 py-1.5 min-[375px]:gap-3">
+                  <span className="w-[84px] shrink-0 pt-4 text-[13px] font-semibold whitespace-nowrap tabular-nums min-[375px]:w-[92px] min-[375px]:text-sm">
                     {formatTime(vm.visit.scheduled_at, agenda.tz)}
                   </span>
                   <span
@@ -144,10 +153,10 @@ export function WeekScreen() {
                   <button
                     type="button"
                     onClick={() => setOpened(vm)}
-                    className="flex min-h-16 flex-1 items-center justify-between gap-2 rounded-card bg-white px-4 py-3 text-left shadow-[0_1px_2px_rgba(16,24,40,0.06)] active:bg-brand-50"
+                    className="flex min-h-16 min-w-0 flex-1 items-center justify-between gap-2 rounded-card bg-white px-3 py-3 text-left shadow-[0_1px_2px_rgba(16,24,40,0.06)] active:bg-brand-50 min-[375px]:px-4"
                   >
-                    <span className="min-w-0">
-                      <span className={clsx('block truncate font-semibold', cancelled && 'text-muted line-through')}>
+                    <span className="min-w-0 flex-1">
+                      <span className={clsx('block truncate font-semibold max-[374px]:line-clamp-2 max-[374px]:whitespace-normal', cancelled && 'text-muted line-through')}>
                         {vm.doctor?.full_name ?? 'Médico'}
                       </span>
                       <span className="block truncate text-sm text-muted">
@@ -169,7 +178,7 @@ export function WeekScreen() {
         )}
 
         <Button variant="soft" block size="lg" icon={<Plus size={22} />} onClick={() => setScheduling(true)}>
-          Agregar visita
+          Programar visita
         </Button>
       </div>
 

@@ -1,5 +1,6 @@
 /** Textos y utilidades del módulo Entrenar. Lenguaje de capacitación, sin elementos de juego (doc 04 §6). */
 import type { DoctorAvailability, TrainingScenarioSummary } from '../../api/client'
+import { formatTime } from '../../lib/time'
 
 export type Tone = 'brand' | 'ok' | 'warn' | 'muted'
 
@@ -59,11 +60,10 @@ export function formatSeconds(total: number): string {
 }
 
 export function formatDateTime(iso: string, tz: string): string {
-  return new Intl.DateTimeFormat('es-CO', {
+  const day = new Intl.DateTimeFormat('es-CO', {
     timeZone: tz,
     day: 'numeric',
     month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
   }).format(new Date(iso))
+  return `${day}, ${formatTime(iso, tz)}`
 }

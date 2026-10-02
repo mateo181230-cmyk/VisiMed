@@ -59,6 +59,8 @@ interface IntelligenceContextValue {
   review: (id: string) => void;
   reset: () => void;
   path: (segment?: string) => string;
+  coreAgenda: boolean;
+  calendarPath: (day?: string) => string;
 }
 
 const Context = createContext<IntelligenceContextValue | null>(null);
@@ -81,6 +83,7 @@ export function IntelligenceProvider({
     preview ? "demo" : "live",
   );
   const { user } = useAuth();
+  const coreAgenda = !preview && user?.role === "rep" && mode !== "demo";
   const [raw, setRaw] = useState<PilotSnapshot | null>(null);
   const [loading, setLoading] = useState(!preview);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -427,6 +430,8 @@ export function IntelligenceProvider({
         removeVisit,
         review,
         reset,
+        coreAgenda,
+        calendarPath: (day) => `${coreAgenda ? '/agenda' : `${basePath}/calendario`}${day ? `?fecha=${encodeURIComponent(day)}` : ''}`,
         path: (segment = "") => `${basePath}${segment ? `/${segment}` : ""}`,
       }}
     >

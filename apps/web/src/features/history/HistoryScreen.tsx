@@ -71,7 +71,7 @@ function HistoryRow({
       onClick={onOpen}
       className="flex min-h-[76px] w-full items-center gap-3 px-4 py-3 text-left active:bg-canvas"
     >
-      <span className="w-[78px] shrink-0 text-[15px] font-semibold whitespace-nowrap tabular-nums">
+      <span className="w-[92px] shrink-0 text-sm font-semibold whitespace-nowrap tabular-nums">
         {formatTime(item.at, tz)}
       </span>
       <span className="min-w-0 flex-1">
@@ -111,7 +111,7 @@ export function HistoryScreen() {
         title="Historial"
         subtitle={
           toConfirm > 0
-            ? `${toConfirm} resúmenes pendientes`
+            ? toConfirm === 1 ? "1 resumen pendiente" : `${toConfirm} resúmenes pendientes`
             : "Historial de tus visitas"
         }
         right={

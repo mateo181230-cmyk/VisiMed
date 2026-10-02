@@ -83,7 +83,7 @@ export function TodayScreen() {
             <p className="text-lg font-bold">Sin visitas hoy</p>
             <p className="mt-1 text-muted">Agenda tu primera visita del día.</p>
             <Button className="mt-5" size="lg" block icon={<Plus size={22} />} onClick={() => setScheduling(true)}>
-              Agendar visita
+              Programar visita
             </Button>
           </Card>
         ) : (
@@ -167,7 +167,7 @@ export function TodayScreen() {
             )}
 
             <Button variant="soft" block size="lg" icon={<Plus size={22} />} onClick={() => setScheduling(true)}>
-              Agregar visita
+              Programar visita
             </Button>
           </>
         )}

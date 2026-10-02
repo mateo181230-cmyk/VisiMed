@@ -8,6 +8,7 @@ juez no puede omitir (por ejemplo, una cifra sin soporte).
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,6 +28,23 @@ from uno.modules.training.rubric import (
 )
 
 PASS_QUIZ_RATIO = 0.75  # preparación aprobada: 3 de 4 (prototipo de Sangil)
+BASIC_COMPETENCIES = frozenset(("apertura", "argumentacion", "cierre"))
+BASIC_BAND_LABELS = frozenset(("Presentación inicial lograda", "Presentación inicial por reforzar"))
+
+
+def for_display(result: dict[str, Any]) -> dict[str, Any]:
+    """Completa metadatos de resultados anteriores sin recalificar ni reescribirlos.
+
+    El rótulo del nivel básico quedó guardado con la evaluación v2. Se usa esa señal
+    histórica, nunca la dificultad actual del catálogo, que puede cambiar después.
+    """
+    display = deepcopy(result)
+    introductory = display.get("band", {}).get("label") in BASIC_BAND_LABELS
+    for competency in display.get("competencies", []):
+        competency.setdefault(
+            "evaluated", not introductory or competency["id"] in BASIC_COMPETENCIES
+        )
+    return display
 
 
 @dataclass(frozen=True)
@@ -139,14 +157,12 @@ def build(
     improvements = result.improvements
     if improvements == [rules.DEFAULT_IMPROVEMENT]:
         # Ninguna competencia quedó en 2 o menos: se señala la más baja, si no está completa.
-        assessed = tuple(
-            c
-            for c in COMPETENCIES
-            if not introductory or c.id in scenario.approval.min_competencies
-        )
+        assessed = tuple(c for c in COMPETENCIES if not introductory or c.id in BASIC_COMPETENCIES)
         lowest = min(assessed, key=lambda c: result.scores[c.id])
         if result.scores[lowest.id] < MAX_PER_COMPETENCY:
             improvements = [f"{lowest.name}: {result.comments[lowest.id]}"]
+        else:
+            improvements = []
     return {
         "method": "reglas",
         "preliminary": True,
@@ -169,6 +185,7 @@ def build(
                 "score": result.scores[c.id],
                 "max": MAX_PER_COMPETENCY,
                 "comment": result.comments[c.id],
+                "evaluated": not introductory or c.id in BASIC_COMPETENCIES,
             }
             for c in COMPETENCIES
         ],

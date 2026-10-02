@@ -19,7 +19,7 @@ const BAND_LABEL: Record<string, string> = {
   deficiente: 'Deficiente',
 }
 
-function AttemptLine({ attempt, tz }: { attempt: TrainingScenario['attempts'][number]; tz: string }) {
+function AttemptLine({ attempt, tz, basic }: { attempt: TrainingScenario['attempts'][number]; tz: string; basic: boolean }) {
   const live = attempt.status === 'live' || attempt.status === 'starting'
   const to = live ? `/entrenar/visita/${attempt.id}` : `/entrenar/intento/${attempt.id}`
   let detail: React.ReactNode
@@ -27,10 +27,11 @@ function AttemptLine({ attempt, tz }: { attempt: TrainingScenario['attempts'][nu
     const tone = BAND_TONE[attempt.band ?? ''] ?? 'muted'
     detail = (
       <>
-        <span className="font-bold tabular-nums">{attempt.total}/30</span>
-        <span className={clsx('rounded-md px-2 py-0.5 text-xs font-bold', TONE_CLASS[tone])}>
+        {!basic && <span className="font-bold tabular-nums">{attempt.total}/30</span>}
+        {!basic && <span className={clsx('rounded-md px-2 py-0.5 text-xs font-bold', TONE_CLASS[tone])}>
           {BAND_LABEL[attempt.band ?? ''] ?? attempt.band}
-        </span>
+        </span>}
+        {basic && !attempt.approved && <span className="text-sm text-muted">Presentación por reforzar</span>}
         {attempt.approved && <span className="text-xs font-bold text-ok">Aprobado</span>}
       </>
     )
@@ -164,7 +165,7 @@ export function ScenarioScreen() {
           <h1 className="text-[26px] leading-tight font-extrabold tracking-tight">{data.title}</h1>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className={clsx('rounded-md px-2 py-0.5 text-xs font-bold', TONE_CLASS[pill.tone])}>{pill.text}</span>
-            {data.progress.best !== null && data.progress.best !== undefined && (
+            {data.difficulty !== 'basico' && data.progress.best !== null && data.progress.best !== undefined && (
               <span className="text-sm font-semibold text-muted tabular-nums">Mejor {data.progress.best}/30</span>
             )}
           </div>
@@ -256,8 +257,9 @@ export function ScenarioScreen() {
         <Card className="space-y-4 p-4">
           {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
           <p className="text-[15px] text-muted">
-            Habla como en una visita real. El médico reacciona a lo que dices: pide brevedad, objeta y no acepta
-            cifras sin soporte. Al terminar verás tu evaluación con la rúbrica de Novamed.
+            {data.difficulty === 'basico'
+              ? 'Practica un saludo, una presentación breve del producto y un cierre. En este nivel el médico te escucha sin plantear objeciones. Al terminar verás la evaluación de estas técnicas.'
+              : 'Habla como en una visita real. El médico reacciona a lo que dices: pide brevedad, objeta y no acepta cifras sin soporte. Al terminar verás tu evaluación con la rúbrica de Novamed.'}
           </p>
           {data.doctor.mode !== 'fake' && (
             <label className="flex min-h-12 items-center gap-3 text-[15px]">
@@ -288,7 +290,7 @@ export function ScenarioScreen() {
           <SectionTitle>Tus intentos</SectionTitle>
           <Card className="divide-y divide-line overflow-hidden">
             {data.attempts.map((attempt) => (
-              <AttemptLine key={attempt.id} attempt={attempt} tz={tz} />
+              <AttemptLine key={attempt.id} attempt={attempt} tz={tz} basic={data.difficulty === 'basico'} />
             ))}
           </Card>
         </section>
