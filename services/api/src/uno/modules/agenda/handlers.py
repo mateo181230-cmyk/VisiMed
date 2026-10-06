@@ -13,7 +13,7 @@ from datetime import timedelta
 from typing import Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from uno import events
@@ -70,8 +70,21 @@ def _check_time(ctx: EventContext, scheduled_at: AwareDatetime) -> None:
 async def _own_visit(ctx: EventContext) -> Visit:
     if ctx.visit_id is None:
         raise Rejected("visit_id_required")
-    visit = await ctx.session.get(Visit, ctx.visit_id)
-    if visit is None or visit.representative_id != ctx.user.id:
+    if ctx.session.get_bind().dialect.name == "sqlite":
+        # SQLite ignora FOR UPDATE. Adquirir el lock de escritura antes de leer el estado
+        # evita que dos llegadas simultáneas acepten y reemplacen el lugar de la visita.
+        await ctx.session.execute(
+            update(Visit)
+            .where(Visit.id == ctx.visit_id, Visit.representative_id == ctx.user.id)
+            .values(updated_at=Visit.updated_at)
+        )
+    visit = await ctx.session.scalar(
+        select(Visit)
+        .where(Visit.id == ctx.visit_id, Visit.representative_id == ctx.user.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if visit is None:
         raise Rejected("unknown_visit")
     return visit
 
@@ -348,12 +361,22 @@ class _Diagnostics(BaseModel):
     duration_ms: int | None = Field(default=None, ge=0)
 
 
+class LocationChange(BaseModel):
+    label: str = Field(min_length=1, max_length=160)
+
+    @field_validator("label", mode="before")
+    @classmethod
+    def _trim_label(cls, value: Any) -> Any:
+        return value.strip() if isinstance(value, str) else value
+
+
 class VisitTouchPayload(_Diagnostics):
     """Payload de ``visit_arrived`` y ``visit_finished``. Sin lectura, ``location`` es ``null``:
     la visita nunca se pierde por falta de GPS, queda en estado ``sin_gps``."""
 
     location: Location | None = None
     error: str | None = None
+    location_change: LocationChange | None = None
 
     @field_validator("error", mode="before")
     @classmethod
@@ -368,12 +391,20 @@ class VisitLocationRetriedPayload(_Diagnostics):
 
 
 async def _classify_for_visit(
-    session: AsyncSession, visit: Visit, location: Location | None
+    session: AsyncSession, visit: Visit, location: Location | None, *, finish: bool = False
 ) -> tuple[str, int | None]:
     """Estado de geocerca contra la referencia de la institución de la visita (si la tiene)."""
     reference: geofence.Reference | None = None
     radius_m = 0
-    if visit.institution_id is not None:
+    if (
+        finish
+        and visit.location_changed_at
+        and visit.arrival_lat is not None
+        and visit.arrival_lng is not None
+    ):
+        reference = geofence.Reference(visit.arrival_lat, visit.arrival_lng)
+        radius_m = visit.planned_location_radius_m or 300
+    elif visit.institution_id is not None:
         institution = await session.get(Institution, visit.institution_id)
         if institution is not None and institution.lat is not None and institution.lng is not None:
             reference = geofence.Reference(institution.lat, institution.lng)
@@ -439,6 +470,25 @@ async def visit_arrived(ctx: EventContext, p: VisitTouchPayload) -> None:
     visit = await _own_visit(ctx)
     if visit.status != "scheduled":
         raise Rejected("visit_not_editable")
+    if p.location_change:
+        if (
+            p.location is None
+            or p.location.source != "gps"
+            or p.location.precision_m > geofence.MAX_USEFUL_PRECISION_M
+            or abs(ctx.occurred_at - p.location.fix_ts) > RETRY_WINDOW
+        ):
+            raise Rejected("location_change_requires_current_gps")
+        institution = (
+            await ctx.session.get(Institution, visit.institution_id)
+            if visit.institution_id
+            else None
+        )
+        visit.location_changed_at = ctx.occurred_at
+        visit.location_change_label = p.location_change.label
+        visit.planned_location_name = institution.name if institution else None
+        visit.planned_location_lat = institution.lat if institution else None
+        visit.planned_location_lng = institution.lng if institution else None
+        visit.planned_location_radius_m = institution.radius_m if institution else 300
     state, distance_m = await _classify_for_visit(ctx.session, visit, p.location)
     visit.status = "in_progress"
     visit.arrived_at = ctx.occurred_at  # hora del toque en el teléfono
@@ -454,6 +504,13 @@ async def visit_arrived(ctx: EventContext, p: VisitTouchPayload) -> None:
             "permission": p.permission,
             "duration_ms": p.duration_ms,
             "error": p.error,
+            **(
+                {
+                    "location_changed": True,
+                }
+                if p.location_change
+                else {}
+            ),
         },
     )
 
@@ -463,9 +520,11 @@ async def visit_finished(ctx: EventContext, p: VisitTouchPayload) -> None:
     visit = await _own_visit(ctx)
     if visit.status not in ("scheduled", "in_progress"):
         raise Rejected("visit_not_editable")
+    if p.location_change:
+        raise Rejected("location_change_only_on_arrival")
     # «Terminé» sin «Llegué»: la visita queda finished con arrived_at nulo (esa es la señal).
     without_arrival = visit.status == "scheduled"
-    state, distance_m = await _classify_for_visit(ctx.session, visit, p.location)
+    state, distance_m = await _classify_for_visit(ctx.session, visit, p.location, finish=True)
     visit.status = "finished"
     visit.finished_at = ctx.occurred_at
     _write_geo(visit, "finish", p.location, state, distance_m)
@@ -498,7 +557,9 @@ async def visit_location_retried(ctx: EventContext, p: VisitLocationRetriedPaylo
         raise Rejected("location_not_retryable")
     if ctx.occurred_at - touched_at > RETRY_WINDOW:
         raise Rejected("retry_window_expired")
-    state, distance_m = await _classify_for_visit(ctx.session, visit, p.location)
+    state, distance_m = await _classify_for_visit(
+        ctx.session, visit, p.location, finish=p.moment == "finish"
+    )
     _write_geo(visit, prefix, p.location, state, distance_m)
     visit.updated_at = ctx.now
     visit.change_seq = await next_change_seq(ctx.session)

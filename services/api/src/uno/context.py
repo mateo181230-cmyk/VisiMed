@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from uno.config import Settings
 from uno.db import make_engine, make_sessionmaker
 from uno.modules.calls.provider import ElevenLabsProvider, FakeProvider, VoiceProvider
+from uno.modules.journey.provider import (
+    JourneyProvider,
+    build_journey_provider,
+    build_recommendations_provider,
+)
 from uno.modules.notifications.senders import (
     EmailSender,
     PushSender,
@@ -34,6 +39,8 @@ class AppContext:
     email_sender: EmailSender
     voice_provider: VoiceProvider | None = None  # None: las llamadas están apagadas
     conversation_provider: ConversationProvider | None = None  # None: no hay médico virtual
+    journey_provider: JourneyProvider | None = None
+    recommendations_provider: JourneyProvider | None = None
     # Estado en memoria del módulo Entrenar (último fallo del proveedor, para no insistir).
     training_state: dict[str, Any] = field(default_factory=dict)
 
@@ -45,6 +52,8 @@ def build_context(
     email_sender: EmailSender | None = None,
     voice_provider: VoiceProvider | None = None,
     conversation_provider: ConversationProvider | None = None,
+    journey_provider: JourneyProvider | None = None,
+    recommendations_provider: JourneyProvider | None = None,
 ) -> AppContext:
     engine = make_engine(settings.database_url)
     return AppContext(
@@ -55,6 +64,9 @@ def build_context(
         email_sender=email_sender or build_email_sender(settings),
         voice_provider=voice_provider or build_voice_provider(settings),
         conversation_provider=conversation_provider or build_conversation_provider(settings),
+        journey_provider=journey_provider or build_journey_provider(settings),
+        recommendations_provider=recommendations_provider
+        or build_recommendations_provider(settings),
     )
 
 

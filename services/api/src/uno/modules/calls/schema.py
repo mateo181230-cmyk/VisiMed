@@ -173,6 +173,65 @@ CORE_FIELDS: tuple[FieldSpec, ...] = (
 # validan campo por campo; conservamos los campos anteriores para reportes y agentes antiguos.
 DETAIL_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec(
+        "doctor_commitment",
+        "string",
+        "Acción a la que se comprometió explícitamente el MÉDICO, sin incluir lo que hará "
+        "el visitador. Conserva cantidad y plazo si los dijo. 'No quedó compromiso del médico' "
+        "solo si se afirmó; null si no se habló. Máximo 500 caracteres.",
+    ),
+    FieldSpec(
+        "representative_commitment",
+        "string",
+        "Nueva acción o entrega que quedó a cargo del VISITADOR para después de esta visita. "
+        "No confundas el objetivo comercial, el compromiso del médico ni una entrega ya "
+        "realizada. null si no se mencionó; máximo 500 caracteres.",
+    ),
+    FieldSpec(
+        "previous_commitment_fulfilled",
+        "string",
+        "Cumplimiento del pendiente del VISITADOR de la visita anterior, según confirmación "
+        "explícita en el relato: yes (lo cumplió), partial (cumplió una parte), "
+        "no (no lo cumplió), "
+        "unknown (no se confirmó). Entregar un documento no prueba que logró el objetivo actual.",
+        ("yes", "partial", "no", "unknown"),
+    ),
+    FieldSpec(
+        "objective_progress",
+        "string",
+        "Avance del objetivo comercial según evidencia explícita del relato: achieved si "
+        "se cumplió el objetivo acordado, partial si se obtuvo solo parte, not_achieved si "
+        "dijo que no avanzó, unknown sin evidencia suficiente. No deduzcas avance del interés, "
+        "de la receptividad ni de haber entregado el material pendiente.",
+        ("achieved", "partial", "not_achieved", "unknown"),
+    ),
+    FieldSpec(
+        "commitment_quantity",
+        "integer",
+        "Cantidad positiva de pacientes o unidades a la que el MÉDICO se comprometió "
+        "explícitamente. null si dijo 'algunos', 'lo consideraré', no dio cantidad o la cifra "
+        "solo figuraba en el objetivo de la agenda. Nunca deduzcas ni propongas un número.",
+    ),
+    FieldSpec(
+        "commitment_due_date",
+        "string",
+        "Fecha concreta del compromiso del MÉDICO en YYYY-MM-DD, solo si quedó explícitamente "
+        "acordada. null para plazos vagos como 'las próximas semanas'; no inventes una fecha.",
+    ),
+    FieldSpec(
+        "next_visit_objective",
+        "string",
+        "Objetivo comercial acordado explícitamente para la siguiente visita, máximo 300 "
+        "caracteres. Distingue el avance esperado del médico de entregas pendientes del visitador. "
+        "null si no lo acordaron; nunca lo redactes como recomendación propia.",
+    ),
+    FieldSpec(
+        "location_change_reason",
+        "string",
+        "Motivo del cambio de ubicación contado por el VISITADOR, máximo 500 caracteres. "
+        "null si no lo explicó. No deduzcas fraude, falta de visita ni que lo pidió el médico "
+        "a partir de la ubicación; conserva únicamente su explicación.",
+    ),
+    FieldSpec(
         "visit_objective",
         "string",
         "Objetivo de la visita según el visitador, máximo 300 caracteres. 'Presenté X para Y' "
@@ -279,14 +338,16 @@ def missing_report_fields(fields: dict[str, Any]) -> list[str]:
 
 GLOBAL_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec(
-        "report_mode", "string",
+        "report_mode",
+        "string",
         "Modalidad elegida explícitamente por el visitador: voice (relato por voz), "
         "written (prefiere escribir en la app), deferred (no tiene tiempo), ongoing "
         "(sigue en la reunión, solo en visit_checkin). Vacío si no lo expresó. "
         "Elegir una modalidad NO confirma un resumen y NO es un dato de la visita.",
     ),
     FieldSpec(
-        "meeting_finished", "boolean",
+        "meeting_finished",
+        "boolean",
         "true SOLO si en visit_checkin dice explícitamente que ya terminó la reunión. "
         "false si sigue reunido o no lo confirmó. No deduzcas el cierre por duración.",
     ),
@@ -387,6 +448,11 @@ def _clean_text(value: Any, limit: int) -> str | None:
 
 
 _TEXT_LIMITS = {
+    "doctor_commitment": 500,
+    "representative_commitment": 500,
+    "location_change_reason": 500,
+    "next_visit_objective": 300,
+    "commitment_due_date": 10,
     "objection": 500,
     "competitor": 80,
     "current_preference": 120,
@@ -430,6 +496,8 @@ def _coerce(spec: FieldSpec, raw: Any) -> Any:
                 return None
             if not 1 <= number <= 730:
                 raise ValueError("plazo fuera de rango")
+        if spec.name == "commitment_quantity" and not 1 <= number <= 100000:
+            raise ValueError("cantidad fuera de rango")
         return number
     if spec.type == "boolean":
         if isinstance(raw, bool):
@@ -440,7 +508,7 @@ def _coerce(spec: FieldSpec, raw: Any) -> Any:
         if text in {"false", "no", "0", ""}:
             return False
         raise ValueError("booleano esperado")
-    if spec.name == "next_action_date" and raw:
+    if spec.name in ("next_action_date", "commitment_due_date") and raw:
         if not isinstance(raw, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw.strip()):
             raise ValueError("fecha esperada")
         return date.fromisoformat(raw.strip()).isoformat()

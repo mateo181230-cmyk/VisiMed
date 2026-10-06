@@ -50,6 +50,14 @@ EDITABLE_FIELDS = (
     "receptiveness",
     "samples_delivered",
     "next_action_date",
+    "doctor_commitment",
+    "representative_commitment",
+    "previous_commitment_fulfilled",
+    "objective_progress",
+    "commitment_quantity",
+    "commitment_due_date",
+    "next_visit_objective",
+    "location_change_reason",
 )
 
 
@@ -82,6 +90,14 @@ class ReportFieldEditedPayload(BaseModel):
         "receptiveness",
         "samples_delivered",
         "next_action_date",
+        "doctor_commitment",
+        "representative_commitment",
+        "previous_commitment_fulfilled",
+        "objective_progress",
+        "commitment_quantity",
+        "commitment_due_date",
+        "next_visit_objective",
+        "location_change_reason",
     ]
     # ``null`` o texto vacío borra el campo.
     value: str | int | bool | None = Field(default=None)

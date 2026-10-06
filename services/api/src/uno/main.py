@@ -22,8 +22,11 @@ from uno.modules.calls import routes as call_routes
 from uno.modules.calls.intelligence import router as intelligence_router
 from uno.modules.calls.provider import VoiceProvider
 from uno.modules.catalog import admin as admin_routes
+from uno.modules.journey import routes as journey_routes
+from uno.modules.journey.provider import JourneyProvider
 from uno.modules.notifications import routes as notification_routes
 from uno.modules.notifications.senders import EmailSender, PushSender
+from uno.modules.recommendations import routes as recommendation_routes
 from uno.modules.sync import routes as sync_routes
 from uno.modules.training import routes as training_routes
 from uno.modules.training.provider import ConversationProvider
@@ -40,6 +43,8 @@ def create_app(
     email_sender: EmailSender | None = None,
     voice_provider: VoiceProvider | None = None,
     conversation_provider: ConversationProvider | None = None,
+    journey_provider: JourneyProvider | None = None,
+    recommendations_provider: JourneyProvider | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     ctx = build_context(
@@ -48,6 +53,8 @@ def create_app(
         email_sender=email_sender,
         voice_provider=voice_provider,
         conversation_provider=conversation_provider,
+        journey_provider=journey_provider,
+        recommendations_provider=recommendations_provider,
     )
     engine = ctx.engine
 
@@ -91,10 +98,12 @@ def create_app(
 
     app.include_router(auth_routes.router)
     app.include_router(agenda_routes.router)
+    app.include_router(journey_routes.router)
     app.include_router(sync_routes.router)
     app.include_router(notification_routes.router)
     app.include_router(call_routes.router)
     app.include_router(intelligence_router)
+    app.include_router(recommendation_routes.router)
     app.include_router(admin_routes.router)
     app.include_router(training_routes.router)
     app.include_router(training_routes.webhooks)

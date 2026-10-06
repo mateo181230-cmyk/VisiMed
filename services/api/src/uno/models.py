@@ -6,12 +6,14 @@ from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import AuthAttemptLock, Device, LoginAttempt, RefreshToken, User
 from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.catalog.models import Doctor, Institution, Panel, Product, ProductLine
+from uno.modules.journey.models import PreparationActivity, PreparationMessage, VisitPreparation
 from uno.modules.notifications.models import (
     EmailVerification,
     NotificationLog,
     NotificationPreference,
     PushSubscription,
 )
+from uno.modules.recommendations.models import RecommendationConversation, RecommendationMessage
 from uno.modules.sync.models import SyncEvent
 from uno.modules.training.models import (
     PracticeAttempt,
@@ -42,8 +44,13 @@ __all__ = [
     "PracticeTurn",
     "Product",
     "ProductLine",
+    "PreparationActivity",
+    "PreparationMessage",
+    "VisitPreparation",
     "PushSubscription",
     "RefreshToken",
+    "RecommendationMessage",
+    "RecommendationConversation",
     "SyncEvent",
     "TrainingProfile",
     "TrainingQuizResult",

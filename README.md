@@ -1,5 +1,22 @@
 # UNO Visitas
 
+## Versión recuperada del VPS (6 de octubre de 2026)
+
+Este repositorio conserva el código Python que ejecutan la API y el trabajador, y los
+65 archivos del frontend que sirve el contenedor web. La captura, las imágenes y los
+SHA-256 están en [`deployments/vps-20261006/manifest.json`](deployments/vps-20261006/manifest.json).
+El procedimiento y sus límites están en [la nota de recuperación](docs/operaciones/recuperacion-vps-2026-10-06.md).
+
+**Frontend:** el VPS conserva la compilación, pero no sus fuentes TypeScript actuales.
+`apps/web/src` conserva la última versión disponible en Git (`9a7bca6`); recompilarla
+produce una interfaz distinta de la desplegada. El Dockerfile web usa por defecto
+[`deployments/vps-20261006/web`](deployments/vps-20261006/web), la copia exacta del contenedor activo.
+Para usar deliberadamente una compilación nueva, pasa `--build-arg WEB_DIST_DIR=apps/web/dist`.
+
+Las credenciales, la configuración privada, la base de datos y los reportes de producción
+se mantienen fuera del repositorio. Las verificaciones históricas de las secciones siguientes
+corresponden a sus fechas; no certifican esta captura.
+
 PWA para visitadores médicos: agenda propia, «Llegué / Terminé», llamada de resumen y, con el tiempo, una capa de inteligencia que aprende de cada visita.
 
 Los documentos de diseño están en [`../Plan UNO Visitas`](../Plan%20UNO%20Visitas) (arquitectura 01, plan de trabajo 02, inteligencia y ML 03, práctica con médico virtual 04). Este repositorio es la construcción de ese plan.

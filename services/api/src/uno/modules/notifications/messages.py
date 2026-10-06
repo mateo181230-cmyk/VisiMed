@@ -71,6 +71,15 @@ def daily_digest(
     return title, f"Empiezas a las {format_time(first_time)} · {who}"
 
 
+def preparation_reminder(*, count: int) -> tuple[str, str]:
+    """Aviso nocturno sin nombres ni texto comercial en la pantalla bloqueada."""
+    visits = "visita" if count == 1 else "visitas"
+    return (
+        "Revisa tu agenda de mañana",
+        f"Tienes {count} {visits}. Revisa tus objetivos y compromisos antes de empezar el día.",
+    )
+
+
 def to_email(to: str, title: str, body: str, app_url: str) -> EmailMessage:
     text = f"{title}\n\n{body}\n\nAbrir UNO Visitas: {app_url}\n"
     html = (

@@ -91,6 +91,8 @@ async def update_prefs(
     call_remind_before_min: int | None = None,
     digest_enabled: bool | None = None,
     digest_time: str | None = None,
+    preparation_enabled: bool | None = None,
+    preparation_time: str | None = None,
 ) -> NotificationPreference:
     prefs = await get_prefs(session, user_id, now)
     if call_remind_before_min is not None:
@@ -107,6 +109,12 @@ async def update_prefs(
         prefs.digest_time = digest_time
     if digest_enabled is not None:
         prefs.digest_enabled = digest_enabled
+    if preparation_time is not None:
+        if not DIGEST_TIME_RE.fullmatch(preparation_time):
+            raise ApiError(422, "invalid_time", "La hora debe tener el formato HH:MM")
+        prefs.preparation_time = preparation_time
+    if preparation_enabled is not None:
+        prefs.preparation_enabled = preparation_enabled
     if push_enabled is not None:
         if push_enabled and not await active_subscriptions(session, user_id):
             raise ApiError(

@@ -26,6 +26,11 @@ class VisitBrief:
     previous_next_action: str | None = None
     previous_visit_at: datetime | None = None
     report_due_at: datetime | None = None
+    objective: str | None = None
+    representative_commitment: str | None = None
+    location_changed: bool = False
+    planned_location: str | None = None
+    actual_location: str | None = None
 
 
 def first_name(full_name: str) -> str:
@@ -94,6 +99,14 @@ def short_label(brief: VisitBrief, tz_name: str, include_names: bool) -> str:
 
 
 def _first_question(brief: VisitBrief, tz_name: str, include_names: bool) -> str:
+    if brief.location_changed:
+        return "Vi que reportaste un cambio de ubicación. ¿Por qué cambió el lugar de la reunión?"
+    if brief.representative_commitment:
+        label = visit_label(brief, tz_name, include_names)
+        return (
+            f"Vi que terminaste {label}. Tenías este compromiso pendiente: "
+            f"{brief.representative_commitment}. ¿Pudiste cumplirlo?"
+        )
     if brief.previous_next_action:
         label = visit_label(brief, tz_name, include_names)
         return (
@@ -126,6 +139,21 @@ def build_dynamic_variables(
             f"{index}. La visita de {spoken_time(brief.scheduled_at, tz_name)}{who}"
             f"{_where(brief.institution)} (línea {brief.line_code})."
         )
+        if brief.objective:
+            lines.append(f"   Objetivo de esta visita: {brief.objective}.")
+        if brief.representative_commitment:
+            lines.append(
+                f"   Compromiso pendiente del visitador: {brief.representative_commitment}. "
+                "Preguntar si lo cumplió; es distinto del objetivo y del compromiso del médico."
+            )
+        if brief.location_changed:
+            original = brief.planned_location or brief.institution or "el lugar acordado"
+            actual = brief.actual_location or "la nueva ubicación registrada"
+            lines.append(
+                f"   Cambio de ubicación reportado: lugar acordado, {original}; "
+                f"lugar de la reunión, {actual}. Preguntar por qué cambió si aún no lo explicó. "
+                "El cambio no significa que la visita no se realizó."
+            )
         if brief.previous_next_action:
             date = (
                 clock.local_date(brief.previous_visit_at, tz_name).isoformat()

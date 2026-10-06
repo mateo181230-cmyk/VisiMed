@@ -24,7 +24,7 @@ services:
     logging: *logging
 
   api: &api
-    image: uno-visitas-api:${UNO_RELEASE_ID:?Define la versión del despliegue}
+    image: uno-visitas-api:20261002T162421Z-finish-only
     build:
       context: ..
       dockerfile: infra/api.Dockerfile

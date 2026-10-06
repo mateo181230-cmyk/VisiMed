@@ -13,7 +13,7 @@ from uno.ids import uuid7
 
 REMIND_OPTIONS = (0, 5, 10, 15, 30, 45, 60, 120)  # minutos antes; 0 = sin recordatorio
 CHANNELS = ("push", "email")
-KINDS = ("visit_reminder", "daily_digest", "test")
+KINDS = ("visit_reminder", "daily_digest", "preparation_reminder", "test")
 
 
 class NotificationPreference(Base):
@@ -30,6 +30,8 @@ class NotificationPreference(Base):
     call_remind_before_min: Mapped[int] = mapped_column(default=5)
     digest_enabled: Mapped[bool] = mapped_column(default=True)
     digest_time: Mapped[str] = mapped_column(String(5), default="07:30")  # HH:MM hora local
+    preparation_enabled: Mapped[bool] = mapped_column(default=True)
+    preparation_time: Mapped[str] = mapped_column(String(5), default="18:30")
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
 
 

@@ -1,1 +1,6 @@
 *.sh text eol=lf
+
+# Preserve the captured bytes so the SHA-256 manifest remains portable.
+services/api/src/uno/** -text
+services/api/migrations/** -text
+deployments/vps-20261006/web/** -text

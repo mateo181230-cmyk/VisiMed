@@ -99,13 +99,20 @@ class Settings(BaseSettings):
     call_window_start_hour: int = 7  # no se llama antes de esta hora local…
     call_window_end_hour: int = 19  # …ni desde esta
     call_closing_hour: int = 18  # a esta hora se llama con lo que haya quedado pendiente
-    call_batch_wait_seconds: int = 20  # espera tras un «Terminé» por si sigue «Otro médico aquí»
+    call_batch_wait_seconds: int = 30  # espera tras «Terminé» antes de la llamada de resumen
     call_max_visits_per_call: int = Field(default=1, ge=1, le=5)  # piloto: una ficha por llamada
     call_retry_minutes: str = "5,15"  # reintentos si no contesta (PRD C1)
     call_poll_seconds: int = 5
     call_result_timeout_minutes: int = 15  # incluye la llamada y el análisis del proveedor
     call_busy_visit_hours: int = 3  # una visita en curso más de estas horas no bloquea la llamada
     call_giveup_hours: int = 24  # sin entrevista pasado este plazo → «sin entrevista»
+
+    # --- Chats de Preparar y Recomendaciones; independientes de las llamadas ---
+    journey_backend: Literal["off", "openai", "deepseek"] = "off"
+    openai_api_key: str = Field(default="", repr=False)
+    openai_model: str = Field(default="gpt-4.1-mini", min_length=1, max_length=100)
+    deepseek_api_key: str = Field(default="", repr=False)
+    deepseek_model: str = Field(default="deepseek-flash", min_length=1, max_length=100)
 
     # --- Entrenar: práctica con médico virtual (doc 04; Tavus con voz de ElevenLabs) ---
     # ``off``: el médico no está disponible (valor seguro). ``fake``: visita simulada (desarrollo).

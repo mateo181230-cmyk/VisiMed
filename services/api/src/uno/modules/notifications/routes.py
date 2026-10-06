@@ -35,6 +35,8 @@ class PreferencesOut(BaseModel):
     remind_options: list[int]
     digest_enabled: bool
     digest_time: str
+    preparation_enabled: bool
+    preparation_time: str
     push_subscriptions: int
     push_available: bool  # el servidor tiene llaves VAPID: se puede suscribir este dispositivo
     vapid_public_key: str | None
@@ -47,6 +49,8 @@ class PreferencesIn(BaseModel):
     call_remind_before_min: int | None = None
     digest_enabled: bool | None = None
     digest_time: str | None = Field(default=None, max_length=5)
+    preparation_enabled: bool | None = None
+    preparation_time: str | None = Field(default=None, max_length=5)
 
 
 async def _prefs_out(session: AsyncSession, ctx: AppContext, user: User) -> PreferencesOut:
@@ -69,6 +73,8 @@ async def _prefs_out(session: AsyncSession, ctx: AppContext, user: User) -> Pref
         remind_options=list(REMIND_OPTIONS),
         digest_enabled=prefs.digest_enabled,
         digest_time=prefs.digest_time,
+        preparation_enabled=prefs.preparation_enabled,
+        preparation_time=prefs.preparation_time,
         push_subscriptions=len(subs),
         push_available=bool(ctx.settings.vapid_public_key),
         vapid_public_key=ctx.settings.vapid_public_key or None,

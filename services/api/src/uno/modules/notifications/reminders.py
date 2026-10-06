@@ -1,9 +1,10 @@
 """Envío de notificaciones y detección de las que ya toca enviar.
 
-Dos tipos automáticos:
+Tipos automáticos:
 
 - ``visit_reminder``: ``remind_before_min`` minutos antes de cada visita agendada.
 - ``daily_digest``: resumen de la agenda del día a la hora local elegida (ventana de 4 h).
+- ``preparation_reminder``: agenda de mañana a las 18:30 locales por defecto (ventana de 2 h).
 
 Cada envío se **reclama** insertando una fila en ``notification_log`` con restricción única
 (usuario, tipo, referencia, canal): dos trabajadores a la vez, o el mismo trabajador dos veces,
@@ -18,7 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,12 +42,13 @@ log = logging.getLogger("uno.notifications")
 MAX_ATTEMPTS = 3
 LEASE = timedelta(minutes=10)  # tiempo máximo que un envío «en curso» se considera vivo
 DIGEST_WINDOW = timedelta(hours=4)
+PREPARATION_WINDOW = timedelta(hours=2)
 BACKOFF = {1: timedelta(minutes=2), 2: timedelta(minutes=10)}
 
 
 @dataclass(frozen=True)
 class Notice:
-    kind: str  # visit_reminder | daily_digest | test
+    kind: str  # visit_reminder | daily_digest | preparation_reminder | test
     ref: str  # identifica el hecho notificado (para no repetirlo)
     title: str
     body: str
@@ -269,6 +271,7 @@ async def run_due_reminders(ctx: AppContext, now: datetime | None = None) -> dic
         try:
             await _visit_reminders(ctx, prefs, user, now, stats)
             await _daily_digest(ctx, prefs, user, now, stats)
+            await _preparation_reminder(ctx, prefs, user, now, stats)
         except Exception:
             log.exception("falló el envío de avisos de un usuario")
             stats["errors"] += 1
@@ -381,3 +384,46 @@ async def _daily_digest(
     )
     result = await deliver(ctx, user.id, notice, now)
     _count(stats, result, "daily_digest")
+
+
+async def _preparation_reminder(
+    ctx: AppContext,
+    prefs: NotificationPreference,
+    user: User,
+    now: datetime,
+    stats: dict[str, int],
+) -> None:
+    if not prefs.preparation_enabled or not prefs.push_enabled:
+        return
+    zone = clock.tz(user.timezone)
+    local_now = now.astimezone(zone)
+    hh, mm = (int(value) for value in prefs.preparation_time.split(":"))
+    start = datetime.combine(local_now.date(), time(hh, mm), tzinfo=zone)
+    if not (start <= local_now < start + PREPARATION_WINDOW):
+        return
+    tomorrow = local_now.date() + timedelta(days=1)
+    day_start, day_end = clock.local_day_bounds(tomorrow, user.timezone)
+    async with ctx.sessionmaker() as session:
+        count = await session.scalar(
+            select(func.count())
+            .select_from(Visit)
+            .where(
+                Visit.representative_id == user.id,
+                Visit.status == "scheduled",
+                Visit.scheduled_at >= day_start,
+                Visit.scheduled_at < day_end,
+            )
+        )
+    if not count:
+        return
+    title, body = messages.preparation_reminder(count=count)
+    notice = Notice(
+        kind="preparation_reminder",
+        ref=tomorrow.isoformat(),
+        title=title,
+        body=body,
+        url=f"/preparacion?fecha={tomorrow.isoformat()}",
+        tag=f"preparation-{tomorrow.isoformat()}",
+    )
+    result = await deliver(ctx, user.id, notice, now, channels=("push",))
+    _count(stats, result, "preparation_reminder")

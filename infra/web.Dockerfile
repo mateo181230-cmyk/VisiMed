@@ -1,6 +1,8 @@
 FROM nginx:alpine
 
+ARG WEB_DIST_DIR=deployments/vps-20261006/web
+
 COPY infra/web.nginx.conf /etc/nginx/conf.d/default.conf
-COPY apps/web/dist /usr/share/nginx/html
+COPY ${WEB_DIST_DIR} /usr/share/nginx/html
 
 EXPOSE 80

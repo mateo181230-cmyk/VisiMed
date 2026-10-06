@@ -69,6 +69,13 @@ class Visit(Base):
     arrival_source: Mapped[str | None] = mapped_column(String(12), default=None)  # gps | reused
     arrival_geo_state: Mapped[str | None] = mapped_column(String(16), default=None)
     arrival_distance_m: Mapped[int | None] = mapped_column(default=None)
+    # Lugar acordado para esta visita: conserva la sede planeada, sin modificar el catálogo.
+    location_changed_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    location_change_label: Mapped[str | None] = mapped_column(String(160), default=None)
+    planned_location_name: Mapped[str | None] = mapped_column(String(160), default=None)
+    planned_location_lat: Mapped[float | None] = mapped_column(default=None)
+    planned_location_lng: Mapped[float | None] = mapped_column(default=None)
+    planned_location_radius_m: Mapped[int | None] = mapped_column(default=None)
     # --- «Terminé»: ídem
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     report_notified_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)

@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from uno.modules.agenda import handlers as _agenda_handlers  # noqa: F401  (registra manejadores)
 from uno.modules.auth.models import Device, User
 from uno.modules.calls import handlers as _call_handlers  # noqa: F401  (registra manejadores)
+from uno.modules.journey import handlers as _journey_handlers  # noqa: F401
 from uno.modules.sync.models import SyncEvent
 from uno.modules.sync.registry import EventContext, Rejected, get_handler
 

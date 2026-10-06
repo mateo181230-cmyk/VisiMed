@@ -13,7 +13,7 @@ Reglas (doc 01 §12; PRD Tabla 1):
 
 - Solo entre ``call_window_start_hour`` y ``call_window_end_hour`` (hora local del visitador).
 - Si el visitador está en otra visita (llegó hace menos de ``call_busy_visit_hours``), se espera.
-- Tras un «Terminé» se esperan ``call_batch_wait_seconds`` por si sigue «Otro médico aquí».
+- Tras un «Terminé» se agenda una llamada persistente a los ``call_batch_wait_seconds`` (30 s).
 - No contesta / ocupado / buzón: reintentos a los +5 y +15 min dentro del plazo original.
 - Si elige escribir o no tiene tiempo, queda pendiente en la app y se detienen los reintentos.
 - Una reunión que continúa sigue abierta y espera a «Terminé» para solicitar el resumen.
@@ -61,8 +61,8 @@ from uno.modules.notifications.models import NotificationPreference
 
 log = logging.getLogger("uno.calls")
 
-MAX_CALLS_PER_VISIT = 3  # la llamada inicial y hasta dos de cierre
-MAX_ATTEMPTS_HARD = 6  # tope absoluto de marcaciones de una misma llamada
+MAX_CALLS_PER_VISIT = 1  # solo el resumen iniciado al terminar
+MAX_ATTEMPTS_HARD = 1  # sin segunda marcación ni devolución automática
 DIAL_LOST_AFTER = timedelta(minutes=2)  # marcada, pero nunca supimos si el proveedor la recibió
 FIRST_POLL_AFTER = timedelta(seconds=15)
 
@@ -172,74 +172,8 @@ async def expire_reports(ctx: AppContext, now: datetime) -> dict[str, int]:
 
 
 async def plan_reminders_and_checkins(ctx: AppContext, now: datetime) -> dict[str, int]:
-    """Una llamada antes de la cita y un chequeo tras 30 min desde «Llegué»."""
-    assert ctx.voice_provider is not None
-    created: Counter[str] = Counter()
-    async with ctx.sessionmaker() as session:
-        rows = (
-            await session.execute(
-                select(Visit, User, NotificationPreference)
-                .join(User, User.id == Visit.representative_id)
-                .outerjoin(NotificationPreference, NotificationPreference.user_id == User.id)
-                .where(Visit.status.in_(("scheduled", "in_progress")), User.is_active)
-                .order_by(Visit.scheduled_at)
-            )
-        ).all()
-        for visit, rep, prefs in rows:
-            minutes = prefs.call_remind_before_min if prefs else 5
-            purpose = "reminder" if visit.status == "scheduled" else "visit_checkin"
-            if purpose == "reminder":
-                if not minutes or not (
-                    visit.scheduled_at - timedelta(minutes=minutes) <= now < visit.scheduled_at
-                ):
-                    continue
-                key = f"{visit.id}:{visit.scheduled_at.isoformat()}"
-                prior = await session.scalar(select(Call.id).where(Call.reminder_key == key))
-            else:
-                if (
-                    not visit.arrived_at
-                    or now < visit.arrived_at + timedelta(minutes=30)
-                    or report_expired(visit, now)
-                ):
-                    continue
-                key = None
-                prior = await session.scalar(
-                    select(Call.id)
-                    .join(CallVisit)
-                    .where(
-                        CallVisit.visit_id == visit.id,
-                        Call.purpose == "visit_checkin",
-                    )
-                )
-            if prior is not None:
-                continue
-            live = await session.scalar(
-                select(Call.id).where(
-                    Call.representative_id == rep.id,
-                    Call.status.in_(("queued", "dialing")),
-                )
-            )
-            if live is not None:
-                continue
-            call = Call(
-                id=uuid7(),
-                representative_id=rep.id,
-                purpose=purpose,
-                reminder_key=key,
-                scheduled_for=now,
-                provider=ctx.voice_provider.name,
-                created_at=now,
-                updated_at=now,
-            )
-            session.add(call)
-            try:
-                await session.flush()
-                session.add(CallVisit(call_id=call.id, visit_id=visit.id, position=1))
-                await session.commit()
-                created[f"{purpose}_calls_planned"] += 1
-            except IntegrityError:
-                await session.rollback()
-    return dict(created)
+    """Recordatorios y chequeos telefónicos desactivados temporalmente para todos."""
+    return {}
 
 
 # ------------------------------------------------------------------------ 2. planear
@@ -261,6 +195,7 @@ async def plan_calls(ctx: AppContext, now: datetime) -> dict[str, int]:
                 await session.execute(
                     select(Visit).where(
                         Visit.status == "finished",
+                        Visit.finished_at.is_not(None),
                         Visit.report_invalid_at.is_(None),
                         (Visit.report_mode.is_(None) | (Visit.report_mode == "voice")),
                     )
@@ -358,29 +293,37 @@ async def plan_calls(ctx: AppContext, now: datetime) -> dict[str, int]:
             if not eligible:
                 continue
 
-            last_touch = max(_utc(v.updated_at) or now for v in eligible)
-            if now - last_touch < timedelta(seconds=s.call_batch_wait_seconds):
-                continue  # puede venir «Otro médico aquí»
-
             eligible.sort(key=lambda v: _utc(v.finished_at) or _utc(v.updated_at) or now)
-            batch = eligible[: min(s.call_max_visits_per_call, MAX_VISITS_PER_CALL)]
+            batch = eligible[:1]
             is_closing = any(history.get(v.id, (0, None))[0] > 0 for v in batch)
+            # El plazo nace del toque «Terminé», no de updated_at: un reintento de GPS o una
+            # sincronización tardía no debe reiniciar la espera. La cola sobrevive al navegador
+            # y a reinicios del trabajador. Una entrega offline ya vencida puede marcar ahora.
+            scheduled_for = max(
+                now,
+                max((_utc(v.finished_at) or now) for v in batch)
+                + timedelta(seconds=max(30, s.call_batch_wait_seconds)),
+            )
             call = Call(
                 id=uuid7(),
                 representative_id=rep_id,
                 direction="outbound",
                 status="queued",
-                scheduled_for=now,
+                scheduled_for=scheduled_for,
                 is_closing=is_closing,
                 provider=ctx.voice_provider.name,
                 created_at=now,
                 updated_at=now,
             )
             session.add(call)
-            await session.flush()
-            for position, visit in enumerate(batch, start=1):
-                session.add(CallVisit(call_id=call.id, visit_id=visit.id, position=position))
             try:
+                await session.flush()
+                for position, visit in enumerate(batch, start=1):
+                    session.add(CallVisit(call_id=call.id, visit_id=visit.id, position=position))
+                    # El teléfono ya pudo sincronizar «Terminé»: debe recibir también la nueva
+                    # fecha de llamada aunque el estado siga siendo finished. El cursor puede
+                    # hacer autoflush del enlace; conserva toda la reserva dentro de este try.
+                    await _set_visit(session, visit, visit.status, now)
                 await session.commit()
                 created += 1
             except IntegrityError:  # otro trabajador ya tomó alguna de estas visitas
@@ -411,6 +354,8 @@ async def place_due_calls(ctx: AppContext, now: datetime) -> dict[str, int]:
 
 
 async def _briefs(session: AsyncSession, call_id: uuid.UUID) -> list[VisitBrief]:
+    from uno.modules.journey.service import preparation_context
+
     rows = (
         await session.execute(
             select(Visit, Doctor, Institution, ProductLine)
@@ -425,6 +370,7 @@ async def _briefs(session: AsyncSession, call_id: uuid.UUID) -> list[VisitBrief]
     briefs = []
     for visit, doctor, institution, line in rows:
         previous_action, previous_at = await previous_followup(session, visit)
+        preparation = await preparation_context(session, visit)
         briefs.append(
             VisitBrief(
                 doctor_name=doctor.full_name,
@@ -435,6 +381,12 @@ async def _briefs(session: AsyncSession, call_id: uuid.UUID) -> list[VisitBrief]
                 previous_next_action=previous_action,
                 previous_visit_at=previous_at,
                 report_due_at=visit.report_due_at,
+                objective=preparation.get("objective"),
+                representative_commitment=preparation.get("rep_commitment"),
+                location_changed=visit.location_changed_at is not None,
+                planned_location=visit.planned_location_name
+                or (institution.name if institution else None),
+                actual_location=visit.location_change_label,
             )
         )
     return briefs
@@ -482,6 +434,15 @@ async def _dial(ctx: AppContext, call_id: uuid.UUID, now: datetime) -> bool:
         call = await session.get(Call, call_id)
         if call is None or call.status != "queued" or _utc(call.scheduled_for) > now:  # type: ignore[operator]
             return False
+        if call.purpose != "summary" or call.attempt > 0 or call.is_closing:
+            call.status = "cancelled"
+            call.failure_reason = "finish_only_policy"
+            call.ended_at = now
+            call.updated_at = now
+            for cv, _ in await _call_visits(session, call_id):
+                cv.live = False
+            await session.commit()
+            return False
         rep = await session.get(User, call.representative_id)
         if rep is None or not rep.is_active:
             call.status = "cancelled"
@@ -513,6 +474,7 @@ async def _dial(ctx: AppContext, call_id: uuid.UUID, now: datetime) -> bool:
                 report = await session.get(VisitReport, visit.id)
                 obsolete |= (
                     report_expired(visit, now)
+                    or visit.status == "not_done"
                     or (report is not None and report.status == "confirmed")
                     or visit.report_mode in ("written", "deferred")
                     or (call.purpose == "visit_checkin" and visit.status != "in_progress")

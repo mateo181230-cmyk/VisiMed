@@ -21,6 +21,7 @@ from uno.modules.auth.models import User
 from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.calls.schema import missing_report_fields
 from uno.modules.catalog.models import Doctor, Institution, Panel, Product, ProductLine
+from uno.modules.journey.models import VisitPreparation
 from uno.modules.notifications.models import REMIND_OPTIONS
 
 WINDOW_PAST_DAYS = 7
@@ -78,6 +79,12 @@ class CallInfoOut(BaseModel):
     reason: str | None  # por qué no salió la última vez (no_answer, busy, voicemail…)
 
 
+class LocationChangeOut(BaseModel):
+    reported_at: datetime
+    label: str
+    planned_location_name: str | None
+
+
 class VisitOut(BaseModel):
     title: str | None = None
     id: uuid.UUID
@@ -99,6 +106,13 @@ class VisitOut(BaseModel):
     finish_geo: GeoOut | None  # None mientras no haya «Terminé»
     updated_at: datetime
     call: CallInfoOut | None = None
+    objective: str | None = None
+    rep_commitment: str | None = None
+    objective_edited: bool = False
+    rep_commitment_edited: bool = False
+    prepared_at: datetime | None = None
+    preparation_seconds: int = 0
+    location_change: LocationChangeOut | None = None
 
 
 class ReportFieldOut(BaseModel):
@@ -120,6 +134,9 @@ class ReportOut(BaseModel):
 
 class StateConfig(BaseModel):
     reminder_options: list[int]
+    calls_enabled: bool = False
+    call_delay_seconds: int = 30
+    call_backend: str = "off"
     # Compatibilidad con clientes previos: sugerencia visual, nunca límite de sincronización.
     window_past_days: int = WINDOW_PAST_DAYS
     window_future_days: int = WINDOW_FUTURE_DAYS
@@ -148,7 +165,14 @@ def _geo_out(state: str | None, distance_m: int | None, precision_m: float | Non
 
 
 async def build_state(
-    session: AsyncSession, user: User, cursor: int | None, now: datetime
+    session: AsyncSession,
+    user: User,
+    cursor: int | None,
+    now: datetime,
+    *,
+    calls_enabled: bool = False,
+    call_delay_seconds: int = 30,
+    call_backend: str = "off",
 ) -> StateOut:
     current = await current_change_seq(session)
     full = cursor is None or cursor <= 0 or cursor > current
@@ -257,9 +281,24 @@ async def build_state(
             live_calls[visit_id] = CallInfoOut(
                 status=status,
                 attempt=attempt,
-                next_at=scheduled_for if status == "queued" and attempt > 0 else None,
+                next_at=scheduled_for if status == "queued" else None,
                 reason=reason,
             )
+
+    preparations = (
+        {
+            row.visit_id: row
+            for row in (
+                await session.scalars(
+                    select(VisitPreparation).where(
+                        VisitPreparation.visit_id.in_([v.id for v in visits])
+                    )
+                )
+            ).all()
+        }
+        if visits
+        else {}
+    )
 
     # --- fichas (resúmenes de la llamada) de sus visitas
     report_query = (
@@ -317,6 +356,25 @@ async def build_state(
                 finish_geo=_geo_out(v.finish_geo_state, v.finish_distance_m, v.finish_precision_m),
                 updated_at=v.updated_at,
                 call=live_calls.get(v.id),
+                objective=preparations[v.id].objective if v.id in preparations else None,
+                rep_commitment=preparations[v.id].rep_commitment if v.id in preparations else None,
+                objective_edited=preparations[v.id].objective_edited
+                if v.id in preparations
+                else False,
+                rep_commitment_edited=preparations[v.id].rep_commitment_edited
+                if v.id in preparations
+                else False,
+                prepared_at=preparations[v.id].prepared_at if v.id in preparations else None,
+                preparation_seconds=preparations[v.id].active_seconds
+                if v.id in preparations
+                else 0,
+                location_change=LocationChangeOut(
+                    reported_at=v.location_changed_at,
+                    label=v.location_change_label or "Ubicación actual reportada",
+                    planned_location_name=v.planned_location_name,
+                )
+                if v.location_changed_at
+                else None,
             )
             for v in visits
         ],
@@ -335,5 +393,10 @@ async def build_state(
             )
             for r in reports
         ],
-        config=StateConfig(reminder_options=list(REMIND_OPTIONS)),
+        config=StateConfig(
+            reminder_options=list(REMIND_OPTIONS),
+            calls_enabled=calls_enabled,
+            call_delay_seconds=call_delay_seconds,
+            call_backend=call_backend,
+        ),
     )
