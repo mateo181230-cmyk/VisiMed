@@ -1,6 +1,9 @@
 """Importa todos los modelos para que ``Base.metadata`` los conozca (Alembic y pruebas)."""
 
 from uno.db import Base, ChangeCounter
+from uno.modules.marketing import models as _marketing_models  # noqa: F401
+from uno.modules.workflows import models as _workflow_models  # noqa: F401
+from uno.modules.territory import models as _territory_models  # noqa: F401
 from uno.events import DomainEvent
 from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import AuthAttemptLock, Device, LoginAttempt, RefreshToken, User

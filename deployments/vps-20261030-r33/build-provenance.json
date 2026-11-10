@@ -1,0 +1,17 @@
+{
+  "release": "20261016-snc-r21",
+  "api_base": {
+    "container_id": "b5230e0d2e41319403db8cd06a3d0c86184a6a2664a7929f3a38de7bd805366c",
+    "image_ref": "uno-visitas-api:20261002T162421Z-finish-only",
+    "image_id": "sha256:eab61e98ce6ada283bca07415eb83e8b51c39ab61f46f998ee6caf6c62f95679"
+  },
+  "web_base": {
+    "container_id": "7c48ed0d1a594d9acde7d563f7d79358e25bdf44bc9366db61b94c98833bcc00",
+    "image_ref": "uno-visitas-web:20261002T161400Z",
+    "image_id": "sha256:42e87dc29ed8a65f8da281d73f7953d0b7d3682eb70b22f4777f6121a9eaec49"
+  },
+  "legacy_web": "Audited compiled artifact. Original matching TypeScript is not available.",
+  "mobile_source": "source/apps/territory",
+  "api_source": "services/api/src",
+  "voice_contract": "infra/elevenlabs"
+}

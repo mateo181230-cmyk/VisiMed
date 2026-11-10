@@ -1,0 +1,12 @@
+import './potential-insights.css';
+const colors=['#325f47','#819974','#9b89b1','#c9aa75','#d8dfd5'];
+const kinds=[['eps','EPS'],['private','Particular'],['prepaid','Prepagada'],['complementary','Complementario'],['unknown','No informado']];
+export function PotentialMix({data}:{data:any}){
+ const total=Number(data.patients_per_day)||0,days=data.practice_days?.length||0;
+ return <div className="potential-visual"><div className="potential-headline"><b>{(total*days).toLocaleString('es-CO')}</b><span>atenciones estimadas por semana<br/>{total} al día × {days} días</span></div><div className="potential-stack" role="img" aria-label="Distribución diaria por modalidad de consulta">{kinds.map(([key,label],i)=><i key={key} title={label+': '+data.consultations[key]} style={{width:(100*(data.consultations[key]||0)/Math.max(1,total))+'%',background:colors[i]}}/>)}</div><div className="potential-key">{kinds.map(([key,label],i)=><span key={key}><i style={{background:colors[i]}}/>{label}<b>{data.consultations[key]||0}</b></span>)}</div><p>Estimación de capacidad de atención. No son pacientes únicos ni prescripciones.</p></div>
+}
+export function PotentialInsights({potentials,doctors}:{potentials:any[];doctors:any[]}){
+ const rows=potentials.filter(p=>p.data?.practice_days?.length).map(p=>({...p,value:p.data.practice_days.length*p.data.patients_per_day,name:doctors.find(d=>d.id===p.doctor_id)?.name||'Médico'})).sort((a,b)=>b.value-a.value);
+ const total=rows.reduce((a,b)=>a+b.value,0),maximum=Math.max(1,...rows.map(p=>p.value));
+ return <section className="potential-panel"><header><div><span>CONOCIMIENTO DE TU PANEL</span><h3>Prioriza con contexto.</h3></div><strong>{rows.length}<small>perfiles diligenciados</small></strong></header>{rows.length?<><div className="potential-total"><b>{total.toLocaleString('es-CO')}</b><span>atenciones semanales estimadas<br/>Suma de capacidad por médico y sede</span></div><div className="potential-ranking">{rows.slice(0,5).map(p=><article key={p.doctor_id+':'+p.institution_id}><div><span>{p.name}</span><b>{p.value}</b></div><i style={{width:100*p.value/maximum+'%'}}/></article>)}</div><p>La frecuencia y los horarios confirmados siguen siendo obligatorios para construir la ruta. Este gráfico no es un pronóstico de ventas.</p></>:<p>Completa los días de atención, pacientes diarios y modalidades de consulta para visualizar el potencial de cada sede.</p>}</section>
+}

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from time import perf_counter
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
@@ -32,6 +33,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from uno.modules.calls.policy import AGENT_VERSION, dispatch_delay
 from uno import clock, events
 from uno.context import AppContext
 from uno.db import next_change_seq
@@ -130,7 +132,7 @@ async def expire_reports(ctx: AppContext, now: datetime) -> dict[str, int]:
             await session.scalars(
                 select(Visit).where(
                     Visit.report_due_at <= now,
-                    Visit.report_invalid_at.is_(None),
+                    Visit.report_pending_at.is_(None),
                 )
             )
         ).all()
@@ -156,7 +158,7 @@ async def expire_reports(ctx: AppContext, now: datetime) -> dict[str, int]:
                     link.live = False
             await events.emit(
                 session,
-                event_type="report_expired",
+                event_type="report_pending",
                 occurred_at=now,
                 recorded_at=now,
                 actor_type="system",
@@ -168,7 +170,7 @@ async def expire_reports(ctx: AppContext, now: datetime) -> dict[str, int]:
             )
             expired += 1
         await session.commit()
-    return {"reports_expired": expired}
+    return {"reports_pending": expired}
 
 
 async def plan_reminders_and_checkins(ctx: AppContext, now: datetime) -> dict[str, int]:
@@ -302,7 +304,7 @@ async def plan_calls(ctx: AppContext, now: datetime) -> dict[str, int]:
             scheduled_for = max(
                 now,
                 max((_utc(v.finished_at) or now) for v in batch)
-                + timedelta(seconds=max(30, s.call_batch_wait_seconds)),
+                + timedelta(seconds=dispatch_delay(s.call_batch_wait_seconds)),
             )
             call = Call(
                 id=uuid7(),
@@ -355,6 +357,7 @@ async def place_due_calls(ctx: AppContext, now: datetime) -> dict[str, int]:
 
 async def _briefs(session: AsyncSession, call_id: uuid.UUID) -> list[VisitBrief]:
     from uno.modules.journey.service import preparation_context
+    from uno.modules.journey.models import VisitPreparation
 
     rows = (
         await session.execute(
@@ -371,6 +374,18 @@ async def _briefs(session: AsyncSession, call_id: uuid.UUID) -> list[VisitBrief]
     for visit, doctor, institution, line in rows:
         previous_action, previous_at = await previous_followup(session, visit)
         preparation = await preparation_context(session, visit)
+        from uno.modules.workflows.models import VisitLearning
+        from uno.modules.calls.brands import catalogue
+        learning = await session.get(VisitLearning, visit.id)
+        prepared = await session.get(VisitPreparation, visit.id)
+        if learning and learning.data.get("objectives") and not (prepared and prepared.objective_edited):
+            names = {x["id"]: x["name"] for x in await catalogue(session, [visit.primary_line_id])}
+            preparation["objective"] = "; ".join(
+                names.get(x["product_id"], "Marca pendiente") + ": " + x["objective"]
+                + ("; medida: " + x["measure"] if x.get("measure") else "")
+                + ("; plazo: " + x["due"] if x.get("due") else "")
+                for x in learning.data["objectives"]
+            )
         briefs.append(
             VisitBrief(
                 doctor_name=doctor.full_name,
@@ -397,32 +412,16 @@ async def previous_followup(
     visit: Visit,
 ) -> tuple[str | None, datetime | None]:
     """Pendiente confirmado del mismo visitador, médico y línea realmente presentada."""
-    rows = (
-        await session.execute(
-            select(Visit, VisitReport)
-            .join(VisitReport, VisitReport.visit_id == Visit.id)
-            .join(VisitLine, VisitLine.visit_id == Visit.id)
-            .where(
-                Visit.representative_id == visit.representative_id,
-                Visit.doctor_id == visit.doctor_id,
-                Visit.id != visit.id,
-                Visit.scheduled_at < visit.scheduled_at,
-                Visit.status == "confirmed",
-                VisitReport.status == "confirmed",
-                VisitLine.role == "discussed",
-                VisitLine.line_id == visit.primary_line_id,
-            )
-            .order_by(Visit.scheduled_at.desc())
-            .limit(10)
-        )
-    ).all()
-    for previous, report in rows:
-        if missing_report_fields(report.fields or {}):
-            continue
-        field = (report.fields or {}).get("next_action") or {}
-        action = field.get("value")
-        if isinstance(action, str) and action.strip() and field.get("confidence") != "low":
-            return action.strip()[:500], _utc(previous.finished_at or previous.scheduled_at)
+    from uno.modules.journey.service import previous_report
+
+    source = await previous_report(session, visit)
+    if source is None:
+        return None, None
+    previous, report = source
+    field = (report.fields or {}).get("next_action") or {}
+    action = field.get("value")
+    if isinstance(action, str) and action.strip() and field.get("confidence") != "low":
+        return action.strip()[:500], _utc(previous.finished_at or previous.scheduled_at)
     return None, None
 
 
@@ -536,16 +535,20 @@ async def _dial(ctx: AppContext, call_id: uuid.UUID, now: datetime) -> bool:
                 variables["visitas_texto"] += (
                     f"\nResumen {index}: vence a {spoken_time(due, rep.timezone)}."
                 )
+        from uno.modules.calls.brands import catalogue
+        brands = await catalogue(session, {v.primary_line_id for _, v in pairs})
+        variables["catalogo_snc"] = ", ".join(p["name"] for p in brands) or "Catálogo no disponible: no asignar marcas por semejanza."
         variables["call_id"] = str(call_id)
         phone = s.dial_phone(rep.phone_e164)
 
+    dispatch_started = perf_counter()
     try:
         dialed = await provider.place_call(DialRequest(call_id, phone, variables))
     except ProviderError as exc:
         log.warning("no se pudo marcar la llamada %s: %s", call_id, exc)
         async with ctx.sessionmaker() as session:
             await _attempt_failed(
-                session, ctx, call_id, "provider_error", now, retryable=exc.retryable
+                session, ctx, call_id, exc.code or "provider_error", now, retryable=exc.retryable
             )
             await session.commit()
         return False
@@ -574,7 +577,10 @@ async def _dial(ctx: AppContext, call_id: uuid.UUID, now: datetime) -> bool:
                 "representative_id": call.representative_id,
                 "visit_ids": [v.id for _, v in pairs],
             },
-            payload={"attempt": call.attempt, "is_closing": call.is_closing, "visits": len(pairs)},
+            payload={"attempt": call.attempt, "is_closing": call.is_closing, "visits": len(pairs),
+                     "agent_version": AGENT_VERSION,
+                     "provider_dispatch_ms": round((perf_counter() - dispatch_started) * 1000),
+                     "queue_late_ms": max(0, round((now - _utc(call.scheduled_for)).total_seconds() * 1000))},
             correlation_id=call_id,
             source="worker",
         )
@@ -748,14 +754,14 @@ async def _upsert_report(
             created_at=now,
             updated_at=now,
             change_seq=change_seq,
-            extractor_version="elevenlabs-v2",
+            extractor_version=AGENT_VERSION,
         )
         session.add(report)
         return report
     existing.call_id = call.id
     existing.fields = fields
     existing.complete = not missing_report_fields(fields)
-    existing.extractor_version = "elevenlabs-v2"
+    existing.extractor_version = AGENT_VERSION
     existing.problems = problems
     existing.updated_at = now
     existing.change_seq = change_seq
@@ -769,6 +775,7 @@ async def handle_result(
 
     Devuelve ``completed`` | ``retry`` | ``failed`` | ``pending`` | ``stale``.
     """
+    processing_started = perf_counter()
     if result.status == "pending":
         return "pending"
     async with ctx.sessionmaker() as session:
@@ -786,7 +793,9 @@ async def handle_result(
         ):
             return "stale"  # repetido, tardío o de un intento anterior
 
-        connected = result.status == "done" and result.user_turns > 0 and not result.voicemail
+        # A provider timeout can be labelled failed despite containing a real conversation.
+        # Keep its evidence; failure/silence must never become a confirmed report.
+        connected = result.user_turns > 0 and not result.voicemail
         if not connected:
             reason = (
                 result.failure_reason
@@ -801,7 +810,9 @@ async def handle_result(
         pairs = await _call_visits(session, call_id)
         mode = report_mode(result.data_collection)
         ongoing = call.purpose == "visit_checkin" and not meeting_finished(result.data_collection)
-        if call.purpose == "reminder" or mode in ("written", "deferred") or ongoing:
+        parsed = parse_analysis(result.data_collection, len(pairs))
+        has_facts = any(p.fields for p in parsed)
+        if call.purpose == "reminder" or (mode in ("written", "deferred") and not has_facts) or ongoing:
             call.status = "completed"
             call.transcript = result.transcript_json()
             call.analysis = result.data_collection
@@ -842,7 +853,15 @@ async def handle_result(
                     visit.finished_at = now
                     visit.finish_geo_state = "sin_gps"
                     await _set_visit(session, visit, "finished", now)
-        parsed = parse_analysis(result.data_collection, len(pairs))
+        if mode in ("written", "deferred"):
+            for _, visit in pairs:
+                visit.report_mode = mode
+        if not has_facts and result.turns:
+            # Extraction may arrive incomplete after the five-minute limit. The transcript
+            # remains on Call for authorised review and is never invented as structured data.
+            call.transcript = result.transcript_json()
+            call.analysis = result.data_collection
+            call.duration_s = result.duration_s
         if not any(p.fields for p in parsed):
             # Contestó pero no contó nada (por ejemplo, «ahorita no puedo»).
             minutes = callback_minutes(result.data_collection)
@@ -869,7 +888,7 @@ async def handle_result(
         rep = await session.get(User, call.representative_id)
         tz_name = rep.timezone if rep else ctx.settings.default_timezone
         today = clock.local_date(_utc(call.dialed_at) or now, tz_name)
-        voice_confirmed = result.has_confirmed_readbacks(len(pairs))
+        voice_confirmed = result.status == "done" and result.has_confirmed_readbacks(len(pairs))
         offset = result.confirmed_readback_offset(len(pairs))
         confirmed_at = (
             min(now, (_utc(call.dialed_at) or now) + timedelta(seconds=offset))
@@ -884,6 +903,19 @@ async def handle_result(
                     await _set_visit(session, visit, "finished", now)
                 continue
             fields = _field_json(pv.fields)
+            if "snc_report_json" in fields:
+                from uno.modules.calls.snc_report import ground_report, legacy_projection, SNCReport
+                from uno.modules.calls.schema import coerce_value
+                fields["snc_report_json"]["value"] = ground_report(
+                    fields["snc_report_json"]["value"],
+                    " ".join(t.text for t in result.turns if t.role == "user"),
+                    reference_date=today,
+                )
+                from uno.modules.calls.brands import catalogue, review
+                canonical, _ = review(fields["snc_report_json"]["value"], await catalogue(session, [visit.primary_line_id]))
+                fields["snc_report_json"]["value"] = canonical
+                for name, value in legacy_projection(SNCReport.model_validate_json(fields["snc_report_json"]["value"])).items():
+                    fields[name] = {"value":coerce_value(name,value),"confidence":"high","source":"call"}
             days = fields.get("next_action_in_days")
             concrete_date = fields.get("next_action_date")
             if concrete_date:
@@ -899,10 +931,13 @@ async def handle_result(
             )
             if report is None:
                 continue
+            from uno.modules.calls.brands import review_report
+            _, brand_issues = await review_report(session, visit, report)
             await refresh_discussed_lines(session, visit.id, report.fields)
             reports += 1
             confirmed_in_time = (
                 pv.confirmed
+                and not brand_issues
                 and voice_confirmed
                 and visit.report_mode != "written"
                 and (visit.report_due_at is None or confirmed_at < visit.report_due_at)
@@ -913,6 +948,8 @@ async def handle_result(
                 visit.report_invalid_at = None
                 report.status = "confirmed"
                 report.confirmed_at = confirmed_at
+                from uno.modules.workflows.tasks import reconcile_tasks
+                await reconcile_tasks(session, visit, report, now)
                 await _set_visit(session, visit, "confirmed", now)
                 await events.emit(
                     session,
@@ -939,7 +976,7 @@ async def handle_result(
                 entities=_entities(visit),
                 payload={
                     "call_id": call.id,
-                    "extractor": "elevenlabs-v2",
+                    "extractor": AGENT_VERSION,
                     "complete": report.complete,
                     "fields_extracted": len(pv.fields),
                     "low_confidence_fields": sum(
@@ -982,6 +1019,10 @@ async def handle_result(
                 "visits": len(pairs),
                 "reports": reports,
                 "interview_complete": interview_complete(result.data_collection),
+                "agent_version": AGENT_VERSION,
+                "report_processing_ms": round((perf_counter() - processing_started) * 1000),
+                "duration_limit_exceeded": bool(call.duration_s and call.duration_s > 300),
+                "termination_reason": result.termination_reason,
             },
             correlation_id=call.id,
             source="worker",

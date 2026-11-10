@@ -20,6 +20,17 @@ from uno.modules.training.service import run_training_cycle
 log = logging.getLogger("uno.worker")
 
 
+async def run_territory_forever(ctx: AppContext, stop: asyncio.Event) -> None:
+    from uno.modules.territory.planning import run_cycle
+    while not stop.is_set():
+        try:
+            await run_cycle(ctx)
+        except Exception:
+            log.exception("error en el ciclo de territorio")
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(stop.wait(), timeout=ctx.settings.territory_poll_seconds)
+
+
 async def run_forever(ctx: AppContext, stop: asyncio.Event) -> None:
     interval = ctx.settings.reminder_poll_seconds
     log.info("trabajador de recordatorios iniciado (cada %s s)", interval)

@@ -885,7 +885,7 @@ async def run_training_cycle(ctx: AppContext, now: datetime | None = None) -> di
 # --------------------------------------------------------------------------- gerencia
 
 
-async def team_summary(session: AsyncSession) -> list[dict[str, Any]]:
+async def team_summary(session: AsyncSession, allowed_reps=None) -> list[dict[str, Any]]:
     """Persona × escenario: intentos, mejor y último puntaje, aprobado (doc 04 §5.11)."""
     catalog = get_catalog()
     reps = (
@@ -907,6 +907,9 @@ async def team_summary(session: AsyncSession) -> list[dict[str, Any]]:
             .order_by(PracticeAttempt.created_at, PracticeAttempt.id)
         )
     ).all()
+    if allowed_reps is not None:
+        reps = [r for r in reps if r.id in allowed_reps]
+        rows = [(a, e) for a, e in rows if a.user_id in allowed_reps]
     by_user: dict[uuid.UUID, list[tuple[PracticeAttempt, PracticeEvaluation]]] = {}
     for attempt, ev in rows:
         by_user.setdefault(attempt.user_id, []).append((attempt, ev))

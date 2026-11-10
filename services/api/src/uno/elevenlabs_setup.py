@@ -18,30 +18,16 @@ from typing import Any
 
 import httpx
 
-from uno.modules.calls.schema import data_collection_items
+from uno.modules.calls.schema import pilot_data_collection_items
 
 DEFAULT_BASE_URL = "https://api.elevenlabs.io"
 REPO_ROOT = Path(__file__).resolve().parents[4]  # …/uno-visitas
 DEFAULT_CONFIG_DIR = REPO_ROOT / "infra" / "elevenlabs"
+if not DEFAULT_CONFIG_DIR.exists() and Path("/opt/uno-voice").exists():
+    DEFAULT_CONFIG_DIR = Path("/opt/uno-voice")
 
-END_CALL_DESCRIPTION = (
-    "En reminder, cuelga tras recordar la cita y despedirte, sin entrevista. "
-    "En visit_checkin, si sigue reunido, respeta la reunión y cuelga sin resumen. "
-    "Si elige escribir o no tiene tiempo, indica el pendiente y el plazo y cuelga. "
-    "Cuelga la llamada. Úsala solo cuando ya tengas lo esencial de todas las visitas, ya hayas "
-    "leído el resumen, ESPERADO su respuesta a la confirmación y te hayas despedido, "
-    "o cuando el visitador no pueda hablar. Nunca cuelgues mientras esperas la confirmación. "
-    "Una visita no realizada TAMBIÉN requiere leer el motivo y próximo intento y preguntar "
-    "'¿Confirmas este resumen de la visita?' antes de colgar. 'No pude ver al doctor' no "
-    "significa que el visitador no pueda hablar ni autoriza terminar sin resumen. "
-    "Si decide revisar el resumen en la app, deja la confirmación pendiente y despídete sin "
-    "insistir. Si corrige un dato, lee el resumen corregido y espera una nueva respuesta antes "
-    "de terminar. "
-    "Con varios médicos NO basta confirmar el primero: espera la lectura y respuesta del "
-    "último médico antes de colgar. Iniciar la conversación del siguiente no es terminarla. "
-    "Invócala en "
-    "ese turno sin decir nada más."
-)
+END_CALL_DESCRIPTION = 'PRECONDICIÓN OBLIGATORIA: salvo petición de parar, buzón, otra persona o límite de tiempo, NO llames esta herramienta en respuesta al relato inicial aunque esté completo. Primero pronuncia la pregunta de cierre y espera el siguiente turno del usuario. Un relato con todos los campos NO es una respuesta al cierre todavía no preguntado. Cuelga con una despedida breve en system__message_to_speak. Nunca uses esta herramienta para preguntar ni leer el resumen. En el cierre normal pregunta una vez si desea agregar o corregir algo; cuando responda, incorpora sus datos y termina sin repetir respuestas. El reporte queda para revisión en la app. Solo lee un resumen si el usuario lo pide; en ese caso espera su confirmación, y ante una corrección confirma solo el cambio sin releer todo. Si no puede seguir, conduce, elige app, responde otra persona, sigue reunido, o alcanzas 280 segundos, termina sin inventar confirmación. Lo pendiente queda para revisión en la app. No ofrezcas entrenamiento ni otra llamada. No afirmes que el servidor ya guardó el reporte.'
+
 VOICEMAIL_DESCRIPTION = (
     "Detecta que contestó un buzón de voz o una grabación en lugar de una persona. Si ocurre, "
     "termina la llamada sin mencionar detalles de las visitas."
@@ -85,6 +71,8 @@ def build_payload(config: dict[str, Any], prompt: str) -> dict[str, Any]:
                 "llm": config["llm"],
                 "temperature": config["temperature"],
                 "max_tokens": config["max_tokens"],
+                "knowledge_base": [],
+                "rag": {"enabled": False},
                 # Solo algunos modelos admiten «reasoning effort»: modelo y esfuerzo van juntos.
                 **_optional(config, "reasoning_effort"),
                 "built_in_tools": {
@@ -109,12 +97,13 @@ def build_payload(config: dict[str, Any], prompt: str) -> dict[str, Any]:
         "conversation": config["conversation"],
     }
     platform_settings: dict[str, Any] = {
-        "data_collection": data_collection_items(),
+        "data_collection": pilot_data_collection_items(),
         "privacy": config["privacy"],
         "call_limits": config["call_limits"],
     }
     return {
         "name": config["name"],
+        "workflow": config.get("workflow", {"nodes": {}, "edges": {}}),
         "tags": config.get("tags", []),
         "conversation_config": conversation_config,
         "platform_settings": platform_settings,

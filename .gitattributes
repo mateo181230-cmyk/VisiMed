@@ -4,3 +4,6 @@
 services/api/src/uno/** -text
 services/api/migrations/** -text
 deployments/vps-20261006/web/** -text
+deployments/vps-20261030-r33/web/** -text
+apps/territory/** -text
+infra/elevenlabs/** -text

@@ -81,6 +81,7 @@ class Visit(Base):
     report_notified_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     report_due_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     report_invalid_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
+    report_pending_at: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     report_mode: Mapped[str | None] = mapped_column(String(12), default=None)
     finish_fix_ts: Mapped[datetime | None] = mapped_column(UTCDateTime, default=None)
     finish_lat: Mapped[float | None] = mapped_column(default=None)

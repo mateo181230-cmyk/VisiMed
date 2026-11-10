@@ -1,0 +1,19 @@
+services:
+  api:
+    image: uno-visitas-api:context-20261030-r33
+    volumes:
+      - /opt/uno-visitas/territory/source-library:/opt/uno-source-library:ro
+    environment:
+      UNO_TERRITORY_OSRM_URL: http://territory-osrm:5000
+      UNO_TERRITORY_GEOCODER_URL: https://nominatim.openstreetmap.org
+      UNO_CALL_BATCH_WAIT_SECONDS: "5"
+      UNO_CALL_POLL_SECONDS: "2"
+  worker:
+    image: uno-visitas-api:context-20261030-r33
+    environment:
+      UNO_TERRITORY_OSRM_URL: http://territory-osrm:5000
+      UNO_TERRITORY_GEOCODER_URL: https://nominatim.openstreetmap.org
+      UNO_CALL_BATCH_WAIT_SECONDS: "5"
+      UNO_CALL_POLL_SECONDS: "2"
+  web:
+    image: uno-visitas-web:territory-20261030-juliana-card-r32

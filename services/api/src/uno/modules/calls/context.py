@@ -140,7 +140,7 @@ def build_dynamic_variables(
             f"{_where(brief.institution)} (línea {brief.line_code})."
         )
         if brief.objective:
-            lines.append(f"   Objetivo de esta visita: {brief.objective}.")
+            lines.append(f"   Objetivo planeado (no prueba de resultado): {brief.objective[:400]}.")
         if brief.representative_commitment:
             lines.append(
                 f"   Compromiso pendiente del visitador: {brief.representative_commitment}. "
@@ -183,9 +183,8 @@ def build_dynamic_variables(
     elif purpose == "visit_checkin":
         opening = "Oye, llevas más de 30 minutos en la reunión. ¿Ya terminaste o sigues reunido?"
     else:
-        opening = (
-            "Oye, ¿tienes tiempo para hacer tu resumen o prefieres hacerlo por escrito en la app?"
-        )
+        label = visit_label(visits[0], tz_name, include_names)
+        opening = f"De {label}, ¿qué productos presentaste y en qué orden?"
     return {
         "tipo_llamada": purpose,
         "visitador_nombre": first_name(representative_name),

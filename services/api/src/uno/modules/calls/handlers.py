@@ -27,7 +27,8 @@ from uno.modules.calls.schema import coerce_value, missing_report_fields
 from uno.modules.sync.registry import EventContext, Rejected, handles
 
 EDITABLE_FIELDS = (
-    "interest_level",
+    "snc_report_json",
+        "interest_level",
     "visit_outcome",
     "order_taken",
     "no_order_reason",
@@ -65,9 +66,29 @@ class ReportConfirmedPayload(BaseModel):
     pass
 
 
+class SNCReportSubmittedPayload(BaseModel):
+    value: str = Field(max_length=24000)
+    confirm: bool = False
+    expected_version: int = Field(ge=0)
+
+
+@handles("snc_report_submitted", SNCReportSubmittedPayload)
+async def snc_report_submitted(ctx: EventContext, p: SNCReportSubmittedPayload) -> None:
+    # One sync event = one transaction. An invalid edit cannot confirm an older report.
+    _, report = await _own_report(ctx, create=True)
+    if report.change_seq != p.expected_version and p.expected_version != 0:
+        raise Rejected("report_changed_reload")
+    if p.expected_version == 0 and report.fields:
+        raise Rejected("report_changed_reload")
+    await report_field_edited(ctx, ReportFieldEditedPayload(field="snc_report_json", value=p.value))
+    if p.confirm:
+        await report_confirmed(ctx, ReportConfirmedPayload())
+
+
 class ReportFieldEditedPayload(BaseModel):
     field: Literal[
-        "interest_level",
+        "snc_report_json",
+    "interest_level",
         "visit_outcome",
         "order_taken",
         "no_order_reason",
@@ -153,17 +174,25 @@ async def report_confirmed(ctx: EventContext, p: ReportConfirmedPayload) -> None
     visit, report = await _own_report(ctx)
     if report.status == "confirmed":
         return  # reenviar es seguro
-    if (visit.report_due_at and ctx.occurred_at >= visit.report_due_at) or (
-        visit.report_invalid_at and not visit.report_due_at
-    ):
-        raise Rejected("report_expired")
     if not any(e.get("value") not in (None, "", False) for e in (report.fields or {}).values()):
         raise Rejected("empty_report")
-    # Una confirmación hecha sin red antes del límite sigue siendo válida al sincronizar.
+    raw = (report.fields or {}).get("snc_report_json", {}).get("value")
+    if raw:
+        from uno.modules.calls.snc_report import SNCReport
+        facts = SNCReport.model_validate_json(raw)
+        if not (facts.products or facts.not_attended_reason or facts.commitments or facts.referrals):
+            raise Rejected("empty_report")
+    from uno.modules.calls.brands import review_report
+    _, brand_issues = await review_report(ctx.session, visit, report)
+    if brand_issues:
+        raise Rejected("brand_review_required")
+    # The target remains measurable; late confirmation preserves all evidence.
     visit.report_invalid_at = None
     report.complete = not missing_report_fields(report.fields or {})
     report.status = "confirmed"
     report.confirmed_at = ctx.now
+    from uno.modules.workflows.tasks import reconcile_tasks
+    await reconcile_tasks(ctx.session, visit, report, ctx.now)
     await _touch(ctx.session, report, ctx)
     if visit.status in ("ready", "processing", "in_call", "finished"):
         visit.status = "confirmed"
@@ -194,7 +223,8 @@ async def report_confirmed(ctx: EventContext, p: ReportConfirmedPayload) -> None
         actor_type="representative",
         actor_id=ctx.user.id,
         entities=_entities(visit),
-        payload={"edited_fields": edited, "complete": report.complete},
+        payload={"edited_fields": edited, "complete": report.complete,
+                 "late": bool(visit.report_due_at and ctx.occurred_at >= visit.report_due_at)},
         correlation_id=visit.id,
         causation_id=ctx.event_id,
     )
@@ -208,12 +238,29 @@ async def report_field_edited(ctx: EventContext, p: ReportFieldEditedPayload) ->
     except ValueError:
         raise Rejected("invalid_value") from None
 
+    if p.field == "snc_report_json" and value:
+        from uno.modules.calls.brands import catalogue, review
+        value, brand_issues = review(value, await catalogue(ctx.session, [visit.primary_line_id]))
+        if report.status == "confirmed" and brand_issues:
+            raise Rejected("brand_review_required")
     fields = dict(report.fields or {})
     current = fields.get(p.field)
     entry = {"value": value, "confidence": "high", "source": "rep_edit"}
     if current == entry:
         return  # el mismo cambio otra vez
     fields[p.field] = entry
+    if p.field == "snc_report_json" and value:
+        from uno.modules.calls.snc_report import SNCReport, legacy_projection
+        data = SNCReport.model_validate_json(value)
+        if report.status == "confirmed" and not (
+            data.products or data.not_attended_reason or data.commitments or data.referrals
+        ):
+            raise Rejected("empty_report")
+        projection = legacy_projection(data)
+        for name, text in projection.items():
+            fields[name] = {"value": coerce_value(name, text or None), "confidence":"high", "source":"rep_edit"}
+    elif p.field == "snc_report_json" and report.status == "confirmed":
+        raise Rejected("empty_report")
     if report.status != "confirmed":
         visit.report_mode = "written"
         visit.updated_at = ctx.now
@@ -234,9 +281,15 @@ async def report_field_edited(ctx: EventContext, p: ReportFieldEditedPayload) ->
             }
         elif fields.get("no_order_reason", {}).get("value") == "not_applicable":
             fields["no_order_reason"] = {"value": None, "confidence": "high", "source": "rep_edit"}
-    report.fields = fields  # reasignar: SQLAlchemy no detecta cambios dentro de un JSON
+    report.fields = fields
+    if report.status == "confirmed" and p.field == "snc_report_json":
+        from uno.modules.workflows.tasks import reconcile_tasks
+        await reconcile_tasks(ctx.session, visit, report, ctx.now)
+    # reasignar: SQLAlchemy no detecta cambios dentro de un JSON
     report.complete = not missing_report_fields(fields)
-    if p.field == "products_discussed":
+    from uno.modules.calls.brands import review_report
+    await review_report(ctx.session, visit, report)
+    if p.field in ("products_discussed", "snc_report_json"):
         await refresh_discussed_lines(ctx.session, visit.id, fields)
     await _touch(ctx.session, report, ctx)
     await events.emit(

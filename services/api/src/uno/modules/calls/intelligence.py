@@ -20,6 +20,7 @@ from uno.deps import get_current_user, get_session
 from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.agenda.state import LineOut, ReportFieldOut, ReportOut
 from uno.modules.auth.models import User
+from uno.modules.auth.permissions import line_ids, representative_ids
 from uno.modules.calls.models import VisitReport
 from uno.modules.calls.schema import missing_report_fields
 from uno.modules.catalog.models import Doctor, Institution, Panel, ProductLine
@@ -79,15 +80,16 @@ async def snapshot(
 ) -> PilotSnapshot:
     now = clock.now()
     since = now - timedelta(days=history_days)
+    allowed = representative_ids(user)
     query = select(Visit).where(Visit.scheduled_at >= since)
-    if user.role not in ("admin", "manager"):
-        query = query.where(Visit.representative_id == user.id)
+    if allowed is not None:
+        query = query.where(Visit.representative_id.in_(allowed))
     visits = (await session.scalars(query.order_by(Visit.scheduled_at))).all()
     visit_ids = [v.id for v in visits]
     doctor_ids = {v.doctor_id for v in visits}
     panel_query = select(Panel)
-    if user.role not in ("admin", "manager"):
-        panel_query = panel_query.where(Panel.representative_id == user.id)
+    if allowed is not None:
+        panel_query = panel_query.where(Panel.representative_id.in_(allowed))
     panel = (await session.scalars(panel_query)).all()
     doctor_ids.update(p.doctor_id for p in panel)
     doctor_rows = (
@@ -102,12 +104,17 @@ async def snapshot(
     for visit in reversed(visits):
         assignments.setdefault(visit.doctor_id, (visit.representative_id, visit.primary_line_id))
     rep_ids = {v.representative_id for v in visits} | {p.representative_id for p in panel}
-    if user.role in ("admin", "manager"):
+    if allowed is not None:
+        rep_query = select(User).where(User.id.in_(allowed))
+    elif user.role in ("admin", "manager"):
         rep_query = select(User).where(or_(User.id.in_(rep_ids), User.role == "rep"))
     else:
         rep_query = select(User).where(User.id == user.id)
     reps = (await session.scalars(rep_query.order_by(User.full_name))).all()
     lines = (await session.scalars(select(ProductLine).order_by(ProductLine.code))).all()
+    allowed_lines = line_ids(user)
+    if allowed_lines is not None:
+        lines = [x for x in lines if x.id in allowed_lines]
     reports = (
         await session.scalars(select(VisitReport).where(VisitReport.visit_id.in_(visit_ids)))
     ).all()

@@ -94,6 +94,7 @@ class AIAvailabilityOut(BaseModel):
 
 
 class PreparationOut(BaseModel):
+    pending_tasks: list[dict] = []
     visit_id: uuid.UUID
     objective: str | None
     rep_commitment: str | None

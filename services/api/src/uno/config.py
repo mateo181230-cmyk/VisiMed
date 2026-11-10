@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     reminder_poll_seconds: int = 60
     embedded_worker: bool = False  # ejecuta el trabajador dentro del proceso (solo desarrollo)
 
+    # Territorio: proveedores del servidor, nunca recibidos desde el navegador.
+    territory_osrm_url: str = ""
+    territory_geocoder_url: str = ""
+    territory_poll_seconds: int = Field(default=30, ge=5, le=300)
+
     # --- llamadas de resumen (doc 01 §12: ElevenLabs sobre una troncal SIP de Telyaco) ---
     # ``off``: nunca se llama a nadie (valor seguro por defecto). ``fake``: proveedor simulado.
     call_backend: Literal["off", "fake", "elevenlabs"] = "off"
@@ -99,10 +104,10 @@ class Settings(BaseSettings):
     call_window_start_hour: int = 7  # no se llama antes de esta hora local…
     call_window_end_hour: int = 19  # …ni desde esta
     call_closing_hour: int = 18  # a esta hora se llama con lo que haya quedado pendiente
-    call_batch_wait_seconds: int = 30  # espera tras «Terminé» antes de la llamada de resumen
+    call_batch_wait_seconds: int = Field(default=5, ge=3, le=60)  # espera tras «Terminé» antes de la llamada de resumen
     call_max_visits_per_call: int = Field(default=1, ge=1, le=5)  # piloto: una ficha por llamada
     call_retry_minutes: str = "5,15"  # reintentos si no contesta (PRD C1)
-    call_poll_seconds: int = 5
+    call_poll_seconds: int = Field(default=2, ge=1, le=30)
     call_result_timeout_minutes: int = 15  # incluye la llamada y el análisis del proveedor
     call_busy_visit_hours: int = 3  # una visita en curso más de estas horas no bloquea la llamada
     call_giveup_hours: int = 24  # sin entrevista pasado este plazo → «sin entrevista»

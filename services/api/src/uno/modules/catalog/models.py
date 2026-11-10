@@ -7,12 +7,12 @@ aprendizaje será médico × línea.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from uno.db import Base, UTCDateTime
+from uno.db import Base, JSONType, UTCDateTime
 from uno.ids import uuid7
 
 
@@ -34,6 +34,33 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(120))
     active: Mapped[bool] = mapped_column(default=True)
     change_seq: Mapped[int] = mapped_column(default=0, index=True)
+
+
+class ProductPresentation(Base):
+    """Commercial presentation from an identified source; no inferred medical claims."""
+
+    __tablename__ = "product_presentation"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid7)
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("product.id"), index=True)
+    barcode: Mapped[str | None] = mapped_column(String(32), unique=True, default=None)
+    name: Mapped[str] = mapped_column(String(160))
+    pack_units: Mapped[int | None] = mapped_column(default=None)
+    sale_class: Mapped[str | None] = mapped_column(String(20), default=None)
+    source: Mapped[dict] = mapped_column(JSONType)
+    active: Mapped[bool] = mapped_column(default=True)
+    change_seq: Mapped[int] = mapped_column(default=0)
+
+
+class CommercialCycle(Base):
+    __tablename__ = "commercial_cycle"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid7)
+    code: Mapped[str] = mapped_column(String(24), unique=True)
+    line_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("product_line.id"), index=True)
+    starts_on: Mapped[date]
+    ends_on: Mapped[date]
+    working_days: Mapped[int]
+    source: Mapped[dict] = mapped_column(JSONType)
+    active: Mapped[bool] = mapped_column(default=True)
 
 
 class Institution(Base):

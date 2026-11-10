@@ -1,0 +1,10 @@
+FROM uno-visitas-api:20261002T162421Z-finish-only
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir ortools==9.15.6755 defusedxml==0.7.1 reportlab==4.5.1
+COPY services/api/src /app/src
+COPY services/api/migrations /app/migrations
+COPY services/api/pyproject.toml services/api/README.md /app/
+RUN pip install --no-deps /app
+COPY infra/elevenlabs /opt/uno-voice
+USER uno

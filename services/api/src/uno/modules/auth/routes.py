@@ -15,6 +15,7 @@ from uno.deps import get_ctx, get_current_user, get_session
 from uno.errors import ApiError
 from uno.modules.auth import service, throttle
 from uno.modules.auth.models import User
+from uno.modules.auth.permissions import capabilities
 from uno.modules.notifications import service as notifications
 from uno.security import constant_time_equals
 
@@ -42,6 +43,9 @@ class UserOut(BaseModel):
     role: str
     phone: str
     timezone: str
+    management_profile: str | None = None
+    capabilities: list[str] = Field(default_factory=list)
+    demo_mode: bool = False
 
     @classmethod
     def of(cls, user: User) -> UserOut:
@@ -51,6 +55,9 @@ class UserOut(BaseModel):
             role=user.role,
             phone=user.phone_e164,
             timezone=user.timezone,
+            management_profile=user.management_profile,
+            capabilities=capabilities(user),
+            demo_mode=bool((user.pilot_scope or {}).get('demo_mode')),
         )
 
 

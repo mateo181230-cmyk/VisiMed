@@ -1,17 +1,22 @@
 # UNO Visitas
 
-## Versión recuperada del VPS (6 de octubre de 2026)
+## Versión recuperada del VPS (r33, 30 de octubre de 2026)
 
-Este repositorio conserva el código Python que ejecutan la API y el trabajador, y los
-65 archivos del frontend que sirve el contenedor web. La captura, las imágenes y los
-SHA-256 están en [`deployments/vps-20261006/manifest.json`](deployments/vps-20261006/manifest.json).
-El procedimiento y sus límites están en [la nota de recuperación](docs/operaciones/recuperacion-vps-2026-10-06.md).
+Este repositorio conserva la versión activa del VPS (`releases/20261030-context-r33`,
+capturada el 9 de noviembre; sin cambios desde el 30 de octubre). Los SHA-256 están en
+[`deployments/vps-20261030-r33/manifest.json`](deployments/vps-20261030-r33/manifest.json).
+Qué cambió desde la captura anterior y los límites de esta copia están en
+[la nota de recuperación](docs/operaciones/recuperacion-vps-2026-10-30.md).
 
-**Frontend:** el VPS conserva la compilación, pero no sus fuentes TypeScript actuales.
+**App Territorio (`/territorio/`):** su fuente TypeScript está en [`apps/territory`](apps/territory)
+y se instala con npm (`npm ci`), fuera del workspace de pnpm.
+
+**Web antigua (`/`):** el VPS conserva la compilación, pero no sus fuentes TypeScript actuales.
 `apps/web/src` conserva la última versión disponible en Git (`9a7bca6`); recompilarla
 produce una interfaz distinta de la desplegada. El Dockerfile web usa por defecto
-[`deployments/vps-20261006/web`](deployments/vps-20261006/web), la copia exacta del contenedor activo.
+[`deployments/vps-20261030-r33/web`](deployments/vps-20261030-r33/web), la copia exacta de la release activa.
 Para usar deliberadamente una compilación nueva, pasa `--build-arg WEB_DIST_DIR=apps/web/dist`.
+La captura anterior sigue en [`deployments/vps-20261006`](deployments/vps-20261006).
 
 Las credenciales, la configuración privada, la base de datos y los reportes de producción
 se mantienen fuera del repositorio. Las verificaciones históricas de las secciones siguientes

@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Uuid, true
 from sqlalchemy.orm import Mapped, mapped_column
 
-from uno.db import Base, UTCDateTime
+from uno.db import Base, JSONType, UTCDateTime
 from uno.ids import uuid7
 
 ROLES = ("rep", "manager", "admin")
@@ -25,6 +25,8 @@ class User(Base):
     phone_e164: Mapped[str] = mapped_column(String(20), unique=True)
     pin_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default="rep")
+    management_profile: Mapped[str | None] = mapped_column(String(20), default=None)
+    pilot_scope: Mapped[dict | None] = mapped_column(JSONType, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
     timezone: Mapped[str] = mapped_column(String(64), default="America/Bogota")
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)

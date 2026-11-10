@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from uno import clock
+from uno.modules.calls.policy import dispatch_delay
 from uno.context import AppContext
 from uno.deps import get_ctx, get_session, require_role
 from uno.modules.agenda.state import StateOut, build_state
@@ -27,6 +28,6 @@ async def my_state(
         cursor,
         clock.now(),
         calls_enabled=ctx.voice_provider is not None,
-        call_delay_seconds=max(30, ctx.settings.call_batch_wait_seconds),
+        call_delay_seconds=dispatch_delay(ctx.settings.call_batch_wait_seconds),
         call_backend=ctx.settings.call_backend,
     )

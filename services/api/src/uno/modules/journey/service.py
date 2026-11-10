@@ -20,6 +20,8 @@ from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import User
 from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.catalog.models import Doctor
+from uno.modules.workflows.tasks import pending_for_visit
+from uno.modules.workflows.knowledge import retrieve
 from uno.modules.journey.chat_budget import (
     QUESTION_TIMEOUT_SECONDS,
     check_chat_budget,
@@ -144,6 +146,10 @@ async def preparation_context(session: AsyncSession, visit: Visit) -> dict[str, 
     commitment = text_evidence(report, "representative_commitment") or text_evidence(
         report, "next_action"
     )
+    pending = await pending_for_visit(session, visit)
+    if report and (report.fields or {}).get("snc_report_json"):
+        commitment = "; ".join(t["action"] for t in pending if t["owner"] == "representative") or None
+        objective = "; ".join(dict.fromkeys(t["next_objective"] for t in pending if t["next_objective"])) or objective
     if preparation:
         if preparation.objective_edited:
             objective = preparation.objective
@@ -151,6 +157,8 @@ async def preparation_context(session: AsyncSession, visit: Visit) -> dict[str, 
             commitment = preparation.rep_commitment
     interest = text_evidence(report, "doctor_interest")
     doctor_commitment = text_evidence(report, "doctor_commitment")
+    if report and (report.fields or {}).get("snc_report_json"):
+        doctor_commitment = "; ".join(t["action"] for t in pending if t["owner"] == "doctor") or None
     topic = doctor_commitment or interest
     opening = (
         f"La última vez hablamos de lo siguiente: {topic}. ¿Tuvo oportunidad de considerarlo?"
@@ -195,6 +203,7 @@ async def preparation_context(session: AsyncSession, visit: Visit) -> dict[str, 
         "rep_commitment": commitment,
         "context": context.model_dump(mode="json"),
         "brief": " ".join(sentences),
+        "pending_tasks": await pending_for_visit(session, visit),
     }
 
 
@@ -370,6 +379,7 @@ async def answer_question(
     visit: Visit,
     payload: QuestionIn,
     now: datetime,
+    *, learning_mode: bool = False,
 ) -> MessageOut:
     # Lock the representative, making reservations and the daily budget atomic across workers.
     await lock_chat_user(session, user)
@@ -382,7 +392,8 @@ async def answer_question(
         if existing.status == "pending" and now - existing.updated_at < timedelta(seconds=90):
             raise ApiError(409, "question_pending", "UNO todavía está respondiendo esta pregunta")
         raise ApiError(503, "question_failed", "No se completó esta consulta. Vuelve a enviarla")
-    check_preparation_time(visit, now, now)
+    if not learning_mode:
+        check_preparation_time(visit, now, now)
     provider = getattr(ctx, "journey_provider", None)
     if provider is None:
         raise ApiError(
@@ -392,6 +403,19 @@ async def answer_question(
         )
     await check_chat_budget(session, user, now, limit_code="preparation_question_limit")
     context = await preparation_context(session, visit)
+    lesson_sources = []
+    if learning_mode:
+        from uno.modules.workflows.learning import context as learning_context
+        lesson = await learning_context(session, user, visit.id)
+        context['learning'] = {k:lesson[k] for k in ('mode','objectives','products','observations','source_at')}
+        lesson_sources = lesson['sources']
+    sources = await retrieve(session, user, payload.question, visit.primary_line_id)
+    # Generic questions about this visit must still include its approved material.
+    # Explicitly matching the question takes precedence over contextual sources.
+    seen = {(s['document_id'],s['slide']) for s in sources}
+    sources += [s for s in lesson_sources if (s['document_id'],s['slide']) not in seen]
+    sources = sources[:3]
+    context = {"approved_knowledge": sources[:3], **context}
     # The provider sees relevant source text, no raw transcripts, location or contact details.
     history = []
     for row in (await answered_messages(session, visit.id))[-5:]:
@@ -418,7 +442,9 @@ async def answer_question(
         )
         if not isinstance(answer, str) or not answer.strip():
             raise ValueError("empty answer")
-        answer = answer.strip()[:5000]
+        answer = answer.strip()[:4200]
+        if sources:
+            answer += "\n\nFuentes recuperadas: " + "; ".join(f"{x['title']} · v{x['version']} · diapositiva {x['slide']} ({x['href']})" for x in sources[:3])
     except Exception:
         # Never expose/log provider exceptions: they can contain source text or credentials.
         row.status = "failed"
@@ -433,14 +459,15 @@ async def answer_question(
     row.status = "answered"
     row.answer = answer
     row.updated_at = clock.now()
-    preparation = await locked_preparation(session, visit, row.updated_at)
-    await touch(session, visit, preparation, row.updated_at)
+    if not learning_mode or (visit.status == 'scheduled' and not visit.arrived_at and not visit.finished_at):
+        preparation = await locked_preparation(session, visit, row.updated_at)
+        await touch(session, visit, preparation, row.updated_at)
     await session.commit()
     return message_out(row)
 
 
 async def manager_metrics(
-    session: AsyncSession, since: datetime, until: datetime
+    session: AsyncSession, since: datetime, until: datetime, allowed_reps=None
 ) -> ManagerMetricsOut:
     rows = (
         await session.execute(
@@ -450,6 +477,7 @@ async def manager_metrics(
             .outerjoin(VisitPreparation, VisitPreparation.visit_id == Visit.id)
             .outerjoin(VisitReport, VisitReport.visit_id == Visit.id)
             .where(Visit.scheduled_at >= since, Visit.scheduled_at < until)
+            .where(Visit.representative_id.in_(allowed_reps) if allowed_reps is not None else True)
             .order_by(Visit.scheduled_at)
         )
     ).all()

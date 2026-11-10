@@ -185,6 +185,18 @@ async def context_for(
                 evidence[key] = value.strip()[: 360 if key == "summary" else 180]
             elif isinstance(value, (bool, int)):
                 evidence[key] = value
+        snc_field = report.fields.get("snc_report_json")
+        if snc_field and snc_field.value:
+            from uno.modules.calls.snc_report import SNCReport
+            try:
+                snc = SNCReport.model_validate_json(snc_field.value)
+                evidence["products"] = [{"name":p.name,"objective":(p.objective or "")[:180],
+                    "achievement":p.achievement,"evidence":(p.evidence or "")[:180],"barriers":[b[:100] for b in p.barriers or []][:3]}
+                    for p in snc.products]
+                evidence["referrals"] = [{"destination":r.destination[:120],"products":r.products} for r in (snc.referrals or [])[:5]]
+                evidence["commitments"] = [{"owner":c.owner,"action":c.action[:200],"due_date":str(c.due_date) if c.due_date else None} for c in (snc.commitments or [])[:5]]
+            except ValueError:
+                pass  # An invalid historical structure is not evidence for the agent.
         recent.append(
             {
                 "doctor": doctors[visit.doctor_id].name,

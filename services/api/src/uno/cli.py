@@ -228,7 +228,7 @@ def run_reminders() -> None:
 @app.command("worker")
 def worker() -> None:
     """Trabajador de recordatorios, llamadas y práctica: corre hasta recibir Ctrl+C."""
-    from uno.worker import run_calls_forever, run_forever, run_training_forever
+    from uno.worker import run_calls_forever, run_forever, run_training_forever, run_territory_forever
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
@@ -241,7 +241,7 @@ def worker() -> None:
             except NotImplementedError:  # Windows
                 signal.signal(sig, lambda *_: loop.call_soon_threadsafe(stop.set))
         await asyncio.gather(
-            run_forever(ctx, stop), run_calls_forever(ctx, stop), run_training_forever(ctx, stop)
+            run_forever(ctx, stop), run_calls_forever(ctx, stop), run_training_forever(ctx, stop), run_territory_forever(ctx, stop)
         )
 
     _run(_with_ctx(go))

@@ -1,0 +1,8 @@
+/* Readable conversation turns; scoped to the existing preparation transcript. */
+details:has(>div>p.whitespace-pre-wrap>strong){overflow:hidden;background:#f6f8fa!important;border-color:#dce5e4!important;padding-inline:0!important}
+details:has(>div>p.whitespace-pre-wrap>strong)>summary{padding:18px 20px;background:white;color:#173e35;font-weight:700;border-bottom:1px solid #e0e8e6}
+details:has(>div>p.whitespace-pre-wrap>strong)>div{padding:18px 14px 24px;max-height:540px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+details>div>p.whitespace-pre-wrap:has(>strong){max-width:94%;margin:0 0 16px!important;padding:14px 16px;border:1px solid #dee6eb;border-radius:16px 16px 16px 4px;background:#fff;color:#233c43;font-size:16px;line-height:1.6;box-shadow:0 2px 5px #142d3b06;overflow-wrap:anywhere}
+details>div>p.whitespace-pre-wrap:has(>strong):nth-child(even){margin-left:auto!important;background:#eaf3ee;border-color:#cddfd4;border-radius:16px 16px 4px 16px}
+details>div>p.whitespace-pre-wrap>strong{font-size:11px!important;letter-spacing:.08em;text-transform:uppercase;color:#256050!important;margin-bottom:7px!important}
+@media(max-width:480px){details:has(>div>p.whitespace-pre-wrap>strong)>div{max-height:62vh}details>div>p.whitespace-pre-wrap:has(>strong){padding:12px 14px;max-width:95%;font-size:15px}}

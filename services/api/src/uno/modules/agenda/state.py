@@ -18,11 +18,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uno.db import current_change_seq
 from uno.modules.agenda.models import Visit, VisitLine
 from uno.modules.auth.models import User
+from uno.modules.auth.permissions import line_ids
 from uno.modules.calls.models import Call, CallVisit, VisitReport
 from uno.modules.calls.schema import missing_report_fields
 from uno.modules.catalog.models import Doctor, Institution, Panel, Product, ProductLine
 from uno.modules.journey.models import VisitPreparation
 from uno.modules.notifications.models import REMIND_OPTIONS
+from uno.modules.territory.models import PanelContact
 
 WINDOW_PAST_DAYS = 7
 WINDOW_FUTURE_DAYS = 14
@@ -180,6 +182,10 @@ async def build_state(
 
     lines = (await session.execute(select(ProductLine).order_by(ProductLine.code))).scalars().all()
     products = (await session.execute(select(Product).order_by(Product.name))).scalars().all()
+    allowed_lines = line_ids(user)
+    if allowed_lines is not None:
+        lines = [x for x in lines if x.id in allowed_lines]
+        products = [x for x in products if x.line_id in allowed_lines]
 
     # --- visitas: full reemplaza la copia local y debe conservar historia y agenda futura.
     visit_query = select(Visit).where(Visit.representative_id == user.id)
@@ -231,7 +237,13 @@ async def build_state(
         Visit.representative_id == user.id, Visit.institution_id.is_not(None)
     )
     inst_query = select(Institution).where(
-        or_(Institution.id.in_(doctor_inst_ids), Institution.id.in_(visit_inst_ids))
+        or_(
+            Institution.id.in_(doctor_inst_ids),
+            Institution.id.in_(visit_inst_ids),
+            Institution.id.in_(
+                select(PanelContact.institution_id).where(PanelContact.representative_id == user.id)
+            ),
+        )
     )
     if not full:
         inst_query = inst_query.where(

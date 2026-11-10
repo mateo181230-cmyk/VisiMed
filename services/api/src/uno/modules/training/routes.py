@@ -15,6 +15,7 @@ from uno.context import AppContext
 from uno.deps import get_ctx, get_current_user, get_session, require_role
 from uno.errors import ApiError
 from uno.modules.auth.models import User
+from uno.modules.auth.permissions import representative_ids, require_capability
 from uno.modules.training import service
 from uno.modules.training.content import Difficulty
 
@@ -397,7 +398,8 @@ class TeamMemberRow(BaseModel):
 
 @manager.get("/training", response_model=list[TeamMemberRow])
 async def get_team_training(
-    _: User = Depends(require_role("manager", "admin")),
+    user: User = Depends(require_role("manager", "admin")),
     session: AsyncSession = Depends(get_session),
 ) -> list[dict[str, Any]]:
-    return await service.team_summary(session)
+    require_capability(user, "training.read")
+    return await service.team_summary(session, representative_ids(user))

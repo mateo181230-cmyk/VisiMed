@@ -14,6 +14,7 @@ from uno.context import AppContext
 from uno.deps import get_ctx, get_session, require_role
 from uno.errors import ApiError
 from uno.modules.auth.models import User
+from uno.modules.auth.permissions import representative_ids
 from uno.modules.calls.models import VisitReport
 from uno.modules.journey import service
 from uno.modules.journey.feedback import feedback_for
@@ -119,4 +120,4 @@ async def preparation_metrics(
     last = until or now + timedelta(days=14)
     if last <= first or last - first > timedelta(days=366):
         raise ApiError(422, "invalid_metrics_window", "Elige un período de hasta un año")
-    return await service.manager_metrics(session, first, last)
+    return await service.manager_metrics(session, first, last, representative_ids(user))

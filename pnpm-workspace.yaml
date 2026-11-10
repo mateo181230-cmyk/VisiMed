@@ -1,3 +1,5 @@
 packages:
   - "apps/*"
   - "e2e"
+  # La app Territorio se instala con npm y su propio package-lock.json, como en el VPS.
+  - "!apps/territory"

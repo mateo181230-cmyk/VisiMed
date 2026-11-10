@@ -30,7 +30,10 @@ def report_expired(visit: Visit, at: datetime) -> bool:
 
 
 async def invalidate_report(session: AsyncSession, visit: Visit, now: datetime) -> None:
-    if visit.report_invalid_at is None:
-        visit.report_invalid_at = visit.report_due_at or now
+    # Compatibility name: the 30-minute target now marks a pending report,
+    # never invalidates evidence or prevents written completion.
+    if visit.report_pending_at is None:
+        visit.report_pending_at = visit.report_due_at or now
+        visit.report_invalid_at = None
         visit.updated_at = now
         visit.change_seq = await next_change_seq(session)

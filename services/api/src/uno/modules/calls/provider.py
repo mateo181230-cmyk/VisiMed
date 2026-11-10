@@ -35,9 +35,10 @@ def clean_utterance(text: str | None) -> str:
 class ProviderError(RuntimeError):
     """Falla del proveedor al marcar o consultar. ``retryable``: tiene sentido volver a intentar."""
 
-    def __init__(self, message: str, *, retryable: bool = True) -> None:
+    def __init__(self, message: str, *, retryable: bool = True, code: str | None = None) -> None:
         super().__init__(message)
         self.retryable = retryable
+        self.code = code
 
 
 @dataclass(frozen=True)
@@ -269,6 +270,8 @@ class ElevenLabsProvider:
             raise ProviderError(f"proveedor no disponible ({response.status_code})")
         if response.status_code >= 400:
             # Configuración o número inválidos: reintentar no lo arregla.
+            if "payment_issue" in response.text or "payment_required" in response.text:
+                raise ProviderError("Facturación de voz pendiente", retryable=False, code="provider_billing")
             raise ProviderError(
                 f"el proveedor rechazó la llamada ({response.status_code}): {response.text[:200]}",
                 retryable=False,

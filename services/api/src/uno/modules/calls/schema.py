@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Literal
 
+from uno.modules.calls.snc_report import SNCReport, normalize_report, EXTRACTION_DESCRIPTION
+
 MAX_VISITS_PER_CALL = 5
 
 VISIT_OUTCOMES = (
@@ -61,6 +63,7 @@ class FieldSpec:
 
 
 CORE_FIELDS: tuple[FieldSpec, ...] = (
+    FieldSpec("snc_report_json", "string", EXTRACTION_DESCRIPTION),
     FieldSpec(
         "interest_level",
         "integer",
@@ -302,12 +305,7 @@ DETAILS_DESCRIPTION = (
     "El contenido extraído se basa en lo que dijo el VISITADOR, nunca en supuestos del agente. "
     + " ".join(f"{f.name}: {f.description}" for f in DETAIL_FIELDS)
 )
-CONFIRMATION_DESCRIPTION = (
-    "true SOLO si el agente leyó el resumen de ESTA visita, pidió confirmar ese resumen y "
-    "el visitador respondió explícitamente 'sí', 'correcto' o equivalente. Si corrigió algo, "
-    "debe haber confirmado una nueva lectura con la corrección. Un sí a otra pregunta, "
-    "silencio, despedida o llamada cortada NO confirma. false si no hay confirmación explícita."
-)
+CONFIRMATION_DESCRIPTION = "true SOLO si el agente leyó el resumen de ESTA visita, pidió confirmar ese resumen y el visitador respondió explícitamente 'sí', 'correcto' o equivalente. Si corrigió ese resumen, basta mencionar el dato corregido y obtener una nueva confirmación del resumen con ese cambio; no se exige releerlo entero. El cierre normal sin lectura del resumen queda para revisión en la app: 'no tengo nada más', 'nada que corregir', un sí a otra pregunta, silencio, despedida o llamada cortada NO confirma. false si no se leyó un resumen y no hay aceptación explícita posterior."
 REQUIRED_REPORT_FIELDS = (
     "products_discussed",
     "visit_objective",
@@ -320,6 +318,14 @@ REQUIRED_REPORT_FIELDS = (
 
 
 def missing_report_fields(fields: dict[str, Any]) -> list[str]:
+    structured = fields.get("snc_report_json")
+    if structured:
+        raw = structured.get("value") if isinstance(structured, dict) else structured.value
+        try:
+            return SNCReport.model_validate_json(raw).missing()
+        except (ValueError, TypeError):
+            return ["Reporte estructurado inválido"]
+
     def value(name: str) -> Any:
         entry = fields.get(name)
         confidence = (
@@ -405,6 +411,18 @@ def data_collection_items() -> dict[str, dict[str, Any]]:
     return items
 
 
+def pilot_data_collection_items() -> dict[str, dict[str, Any]]:
+    """One structured extraction instead of competing per-field interpretations."""
+    return {
+        "v1_snc_report_json": {"type":"string", "description":EXTRACTION_DESCRIPTION},
+        "v1_summary": {"type":"string", "description":"Resumen fiel de la visita según el visitador, máximo 800 caracteres. Sin datos identificables de pacientes."},
+        "v1_report_confirmed": {"type":"boolean", "description":CONFIRMATION_DESCRIPTION},
+        "report_mode": {"type":"string", "enum":["voice","written","deferred","ongoing"], "description":"voice por defecto, incluso si faltan datos o no recuerda. written SOLO si el visitador explícitamente decide continuar en la app; deferred si pide parar; ongoing si sigue reunido. No infieras written de campos incompletos. Cambiar canal no borra datos narrados."},
+        "meeting_finished": {"type":"boolean", "description":"true solo si terminó la visita o dice explícitamente que ya terminó."},
+        "interview_complete": {"type":"boolean", "description":"true solo si informó productos/orden, objetivos/resultados, barreras, direccionamiento y compromisos (incluidas negativas explícitas). Confirmación y completitud son distintas."},
+    }
+
+
 def _item(spec: FieldSpec) -> dict[str, Any]:
     item: dict[str, Any] = {"type": spec.type, "description": spec.description}
     if spec.enum:
@@ -476,6 +494,8 @@ def _coerce(spec: FieldSpec, raw: Any) -> Any:
     """Devuelve el valor limpio o lanza ``ValueError`` si es inválido."""
     if raw is None:
         return None
+    if spec.name == "snc_report_json":
+        return normalize_report(raw)
     if spec.type == "integer":
         if isinstance(raw, bool):
             raise ValueError("entero esperado")

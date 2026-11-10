@@ -1,30 +1,33 @@
 {
   "_comentario": "Configuración del agente de voz de UNO Visitas en ElevenLabs. Se aplica con `uno elevenlabs-apply`; el guion vive en prompt.es.md y los campos que se extraen en services/api/src/uno/modules/calls/schema.py. Cambiar el agente es un PR, no un clic en el panel.",
   "name": "UNO Visitas · Entrevista de visita",
-  "tags": ["uno-visitas"],
-  "first_message": "Hola {{visitador_nombre}}, soy UNO; esta llamada se graba. {{pregunta_inicial}}",
+  "tags": [
+    "uno-visitas"
+  ],
+  "first_message": "Hola {{visitador_nombre}}, soy UNO, el asistente de Novamed. {{pregunta_inicial}}",
   "dynamic_variable_placeholders": {
     "visitador_nombre": "Carlos",
     "num_visitas": "1",
-    "visitas_texto": "1. La visita de las 9:30 a. m. con la doctora Laura Méndez en Clínica Central (línea GASTRU).",
-    "pregunta_inicial": "Oye, ¿tienes tiempo para hacer tu resumen o prefieres hacerlo por escrito en la app?",
+    "visitas_texto": "1. Visita con la doctora Laura Méndez en Consultorio de prueba (línea SNC).",
+    "pregunta_inicial": "¿Qué productos presentaste con la doctora Laura Méndez y en qué orden?",
     "tipo_llamada": "summary",
-    "pregunta_relato": "Vi que terminaste tu visita con la doctora Laura Méndez. ¿Cómo te fue?",
+    "pregunta_relato": "¿Qué productos presentaste y en qué orden?",
     "fecha_actual": "2026-09-30",
-    "zona_horaria": "America/Bogota"
+    "zona_horaria": "America/Bogota",
+    "catalogo_snc": "ACTIN, CANNEPI, CLOXAQUIM, ESCILOM, ESLUX, FERBIN, NOVASLEEP, PRAGMATEN, QUITIDE, SERTRANEX, ZINTERGIA"
   },
   "language": "es",
   "llm": "gemini-3.5-flash",
   "reasoning_effort": "minimal",
   "temperature": 0.1,
-  "max_tokens": 200,
+  "max_tokens": 240,
   "tts": {
     "model_id": "eleven_v3_conversational",
     "voice_id": "b2htR0pMe28pYwCY9gnP",
     "_voz": "Sofía · natural y conversacional (colombiana). Alternativas: Marcela 86V9x9hrQds83qf7zaGn, Lina VmejBeYhbrcTPwDniox7, Juan Restrepo ucWwAruuGtBeHfnAaKcJ (hombre).",
     "stability": 0.5,
     "similarity_boost": 0.75,
-    "speed": 1.0,
+    "speed": 1.05,
     "optimize_streaming_latency": 4,
     "agent_output_audio_format": "pcm_16000"
   },
@@ -33,22 +36,54 @@
     "provider": "scribe_realtime",
     "user_input_audio_format": "pcm_16000",
     "keywords": [
-      "UNO", "Novamed", "ESOMED", "esomeprazol", "pantoprazol", "omeprazol", "lansoprazol",
-      "IBP", "Hüttling", "reflujo", "dispepsia", "gastroenterólogo", "internista",
-      "RESPI", "OSTRU", "GASTRU", "muestras", "pedido", "formula", "receta", "recetar",
-      "farmacia", "desabastecimiento", "aló", "listo", "dale", "claro", "perfecto"
+      "UNO",
+      "Novamed",
+      "SNC",
+      "ACTIN",
+      "CLOXAQUIM",
+      "ESCILOM",
+      "FERBIN",
+      "PRAGMATEN",
+      "QUITIDE",
+      "SERTRANEX",
+      "ZINTERGIA",
+      "Cannepi",
+      "Novasleep",
+      "objetivo",
+      "compromiso",
+      "droguería",
+      "Cafam",
+      "Colsubsidio",
+      "Cruz Verde",
+      "Acuña",
+      "ESLUX"
     ]
   },
   "turn": {
-    "turn_timeout": 3.0,
+    "turn_timeout": 7.0,
     "silence_end_call_timeout": 20.0,
     "turn_eagerness": "normal",
     "turn_model": "turn_v3",
     "speculative_turn": true,
-    "interruption_ignore_terms": ["ajá", "aja", "mmm", "eh", "aham"]
+    "interruption_ignore_terms": [
+      "ajá",
+      "aja",
+      "mmm",
+      "eh",
+      "aham"
+    ]
   },
   "conversation": {
-    "max_duration_seconds": 720
+    "max_duration_seconds": 285,
+    "client_events": [
+      "audio",
+      "agent_response",
+      "user_transcript",
+      "agent_response_correction",
+      "agent_tool_response",
+      "agent_response_complete",
+      "interruption"
+    ]
   },
   "privacy": {
     "record_voice": true,
@@ -61,5 +96,22 @@
     "agent_concurrency_limit": 3,
     "daily_limit": 500,
     "bursting_enabled": false
+  },
+  "version": "snc-20261029-v6",
+  "workflow": {
+    "edges": {},
+    "nodes": {
+      "start_node": {
+        "type": "start",
+        "position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "edge_order": [],
+        "parent_subgraph_id": null
+      }
+    },
+    "subgraphs": {},
+    "prevent_subagent_loops": false
   }
 }

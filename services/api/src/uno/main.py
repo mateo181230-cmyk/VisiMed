@@ -29,8 +29,11 @@ from uno.modules.notifications.senders import EmailSender, PushSender
 from uno.modules.recommendations import routes as recommendation_routes
 from uno.modules.sync import routes as sync_routes
 from uno.modules.training import routes as training_routes
+from uno.modules.territory.routes import router as territory_router
+from uno.modules.workflows.routes import router as workflows_router
+from uno.modules.marketing.routes import router as marketing_router
 from uno.modules.training.provider import ConversationProvider
-from uno.worker import run_calls_forever, run_forever, run_training_forever
+from uno.worker import run_calls_forever, run_forever, run_training_forever, run_territory_forever
 
 VERSION = "0.1.0"
 log = logging.getLogger("uno")
@@ -66,6 +69,7 @@ def create_app(
             tasks.append(asyncio.create_task(run_forever(ctx, stop)))
             tasks.append(asyncio.create_task(run_calls_forever(ctx, stop)))
             tasks.append(asyncio.create_task(run_training_forever(ctx, stop)))
+            tasks.append(asyncio.create_task(run_territory_forever(ctx, stop)))
         try:
             yield
         finally:
@@ -102,12 +106,21 @@ def create_app(
     app.include_router(sync_routes.router)
     app.include_router(notification_routes.router)
     app.include_router(call_routes.router)
+    from uno.modules.calls.browser import router as browser_voice_router
+    app.include_router(browser_voice_router)
     app.include_router(intelligence_router)
     app.include_router(recommendation_routes.router)
     app.include_router(admin_routes.router)
     app.include_router(training_routes.router)
     app.include_router(training_routes.webhooks)
     app.include_router(training_routes.manager)
+    app.include_router(territory_router)
+    from uno.modules.territory.calendar import router as calendar_router
+    from uno.modules.territory.demo import router as demo_router
+    app.include_router(calendar_router)
+    app.include_router(demo_router)
+    app.include_router(workflows_router)
+    app.include_router(marketing_router)
 
     @app.get("/salud", tags=["ops"])
     async def health() -> JSONResponse:

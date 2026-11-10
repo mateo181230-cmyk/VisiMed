@@ -1,0 +1,3 @@
+FROM uno-visitas-api:territory-20261016-snc-r16
+COPY service.py /usr/local/lib/python3.12/site-packages/uno/modules/calls/service.py
+RUN PYTHONPYCACHEPREFIX=/tmp/build-pycache python -m py_compile /usr/local/lib/python3.12/site-packages/uno/modules/calls/service.py

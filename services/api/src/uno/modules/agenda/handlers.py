@@ -278,6 +278,10 @@ async def visit_rescheduled(ctx: EventContext, p: VisitRescheduledPayload) -> No
         return
     previous = visit.scheduled_at
     visit.scheduled_at = p.scheduled_at
+    # An explicit change in the existing agenda is a fixed appointment. The
+    # optimizer must not undo the representative's new date on its next pass.
+    if visit.planned_by == "routing":
+        visit.planned_by = "rep"
     visit.reschedule_count += 1
     visit.updated_at = ctx.now
     visit.change_seq = await next_change_seq(ctx.session)
@@ -470,6 +474,20 @@ async def visit_arrived(ctx: EventContext, p: VisitTouchPayload) -> None:
     visit = await _own_visit(ctx)
     if visit.status != "scheduled":
         raise Rejected("visit_not_editable")
+    # A demonstration uses the same visit lifecycle, but requires a fresh GPS
+    # fix at the registered office; changing its place cannot bypass the fence.
+    if visit.planned_by == "demo":
+        institution = await ctx.session.get(Institution, visit.institution_id)
+        location = p.location
+        if (
+            p.location_change or not location or location.source != "gps"
+            or location.precision_m > 100
+            or abs(ctx.now - location.fix_ts) > RETRY_WINDOW
+            or not institution or institution.lat is None or institution.lng is None
+        ):
+            raise Rejected("demo_requires_current_gps")
+        if geofence.haversine_m(location.lat, location.lng, institution.lat, institution.lng) > institution.radius_m:
+            raise Rejected("demo_outside_office")
     if p.location_change:
         if (
             p.location is None
@@ -520,6 +538,8 @@ async def visit_finished(ctx: EventContext, p: VisitTouchPayload) -> None:
     visit = await _own_visit(ctx)
     if visit.status not in ("scheduled", "in_progress"):
         raise Rejected("visit_not_editable")
+    if visit.planned_by == "demo" and not visit.arrived_at:
+        raise Rejected("demo_requires_arrival")
     if p.location_change:
         raise Rejected("location_change_only_on_arrival")
     # «Terminé» sin «Llegué»: la visita queda finished con arrived_at nulo (esa es la señal).
